@@ -72,3 +72,4 @@ api/data/*.json
 .env
 .env.local
 .claude
+Playground
