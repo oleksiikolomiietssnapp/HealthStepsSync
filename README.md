@@ -1,6 +1,6 @@
 # iOS Health Steps Sync
 
-A prototype iOS app demonstrating an efficient layering algorithm for discovering step count data from Apple Health. Currently implements Stage 1: the layering algorithm discovers date intervals with step data using aggregated queries and stores them to SwiftData. (Stage 2 fetching/API sync is planned but not yet implemented in the UI.)
+A prototype iOS app demonstrating an efficient layering algorithm for discovering step count data from Apple Health, with a complementary Python API server for syncing step data. Currently implements Stage 1: the layering algorithm discovers date intervals with step data using aggregated queries and stores them to SwiftData. (Stage 2 fetching/API sync is planned but not yet implemented in the UI.)
 
 ## Requirements
 
@@ -13,10 +13,11 @@ A prototype iOS app demonstrating an efficient layering algorithm for discoverin
 - Mock HealthKit data generation (2+ years of realistic step data)
 - SwiftData storage of discovered intervals
 - Basic UI showing layering results
+- Python API server with step data storage and retrieval endpoints
 
 🚧 **Planned (not yet implemented):**
 - Stage 2a: Fetching raw step samples from discovered intervals
-- Stage 2b: API synchronization
+- Stage 2b: API synchronization from iOS app
 - Settings UI for API configuration
 - Complete end-to-end sync workflow
 
@@ -27,6 +28,12 @@ A prototype iOS app demonstrating an efficient layering algorithm for discoverin
 3. Build and run (⌘R)
 4. Tap "Chunk" to run the layering algorithm
 5. View discovered intervals and timing results
+
+## API Server
+
+A Python Flask API server is available in the `api/` folder for storing and retrieving step data.
+
+See [api/README.md](api/README.md) for setup instructions and [api/SCHEMA.md](api/SCHEMA.md) for detailed API documentation.
 
 ## What to Expect
 
