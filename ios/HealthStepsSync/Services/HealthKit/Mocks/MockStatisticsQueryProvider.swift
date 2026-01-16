@@ -73,7 +73,7 @@ class MockStatisticsQueryProvider: StatisticsQueryProvider {
                     endDate: endDate,
                     count: Int.random(in: 10...500),
                     sourceBundleId: "com.apple.health.mock",
-                    sourceDeviceName: "Mock iPhone"
+                    sourceDeviceName: HealthDeviceModel.random.rawValue
                 )
                 samples.append(sample)
 

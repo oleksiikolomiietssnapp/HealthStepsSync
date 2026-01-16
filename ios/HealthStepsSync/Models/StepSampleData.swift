@@ -21,5 +21,6 @@ protocol StepSampleData {
 extension HKQuantitySample: StepSampleData {
     var count: Int { Int(quantity.doubleValue(for: .count())) }
     var sourceBundleId: String { sourceRevision.source.bundleIdentifier }
-    var sourceDeviceName: String? { device?.name }
+    var sourceDeviceName: String? { device?.model }
 }
+

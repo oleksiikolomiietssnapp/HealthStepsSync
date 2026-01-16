@@ -133,10 +133,6 @@ class HealthKitStatisticsQueryProvider: StatisticsQueryProvider {
         )
 
         // Sort by start date for consistent ordering
-        let sortDescriptor = NSSortDescriptor(
-            key: HKSampleSortIdentifierStartDate,
-            ascending: true
-        )
         let batchSize = 10000
         var anchor: HKQueryAnchor? = loadAnchor()
 

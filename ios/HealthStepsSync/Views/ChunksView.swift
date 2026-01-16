@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ChunksView: View {
+    @Environment(\.healthKitManager) var healthKitManager
     var chunk: SyncInterval
 
     var body: some View {
@@ -24,13 +25,23 @@ struct ChunksView: View {
         RoundedRectangle(cornerRadius: 4)
             .fill(color)
             .overlay(
-                VStack(alignment: .center, spacing: 0) {
-                    Text(chunk.startDate, format: .dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits))
-                    Text(chunk.endDate, format: .dateTime.day(.twoDigits).month(.twoDigits).year(.twoDigits))
-                    Text(chunk.stepCount, format: .number.attributed)
-                        .font(.caption)
+                VStack(alignment: .center, spacing: 2) {
+                    Text(chunk.startDate, format: .dateTime.month(.twoDigits).day(.twoDigits).year(.twoDigits))
+                        .font(.caption2)
+                        .foregroundStyle(.black.opacity(0.9))
+
+                    Text(chunk.endDate, format: .dateTime.month(.twoDigits).day(.twoDigits).year(.twoDigits))
+                        .font(.caption2)
+                        .foregroundStyle(.black.opacity(0.9))
+
+                    Spacer()
+                        .frame(height: 4)
+
+                    Text(chunk.stepCount, format: .number)
+                        .font(.system(.caption, design: .rounded, weight: .semibold))
+                        .foregroundStyle(.black)
                 }
-                .font(.caption2)
+                .padding(4)
             )
             .aspectRatio(1, contentMode: .fit)
     }
