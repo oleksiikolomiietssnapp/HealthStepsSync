@@ -13,6 +13,7 @@ import SwiftData
 struct HealthStepsSyncApp: App {
     @Environment(\.healthKitManager) var healthKitManager
     let modelContainer: ModelContainer
+    @Query var chunks: [SyncInterval]
 
     init() {
         do {
@@ -29,7 +30,7 @@ struct HealthStepsSyncApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                ContentView()
+                ContentView(loadingState: HealthSyncState(chunks: chunks))
                     .task {
                         do {
                             try await healthKitManager.requestAuthorization()

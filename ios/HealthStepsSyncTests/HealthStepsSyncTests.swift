@@ -20,7 +20,7 @@ struct LayeringServiceTests {
 
         #expect(
             results.allSatisfy { interval in
-                interval.stepCount <= 10_000
+                interval.stepCount <= service.maxStepsPerInterval
                     && interval.syncedToServer == false
                     && interval.endDate > interval.startDate
             }
@@ -45,7 +45,7 @@ struct LayeringServiceTests {
         print(results.count)
         #expect(
             results.allSatisfy { interval in
-                interval.stepCount <= 10_000
+                interval.stepCount <= service.maxStepsPerInterval
                     && interval.syncedToServer == false
                     && interval.endDate > interval.startDate
             }
@@ -69,7 +69,7 @@ struct LayeringServiceTests {
         print(results.count)
         #expect(
             results.allSatisfy { interval in
-                interval.stepCount <= 10_000
+                interval.stepCount <= service.maxStepsPerInterval
                     && interval.syncedToServer == false
                     && interval.endDate > interval.startDate
             }

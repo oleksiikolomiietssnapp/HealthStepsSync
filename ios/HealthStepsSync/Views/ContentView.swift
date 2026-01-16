@@ -8,21 +8,39 @@
 import SwiftData
 import SwiftUI
 
-enum LoadingChunksState: Equatable {
+enum HealthSyncState: Equatable {
     case idle
     case loading
-    case loaded([SyncInterval])
+    case loaded
+    case storing
+    case pauseStoring
+    case stored
+
+    init(chunks: [SyncInterval]) {
+        if chunks.isEmpty {
+            self = .idle
+        } else {
+            if chunks.first(where: { $0.syncedToServer }) != nil,
+               chunks.first(where: { !$0.syncedToServer }) != nil {
+                self = .pauseStoring
+            } else {
+                self = .loaded
+            }
+        }
+    }
 }
 
 struct ContentView: View {
     @Environment(\.healthKitManager) var healthKitManager
     @Environment(\.modelContext) private var modelContext
+    @Query var chunks: [SyncInterval]
 
-    @State private var loadingState: LoadingChunksState = .idle
-    @State var task: Task<Void, Never>?
+    @State private var loadingState: HealthSyncState
+    @State var layeringTask: Task<Void, Never>?
 
-    @State private var startDate: Date?
-    @State private var endDate: Date?
+    init(loadingState: HealthSyncState) {
+        self.loadingState = loadingState
+    }
 
     var body: some View {
         Group {
@@ -38,40 +56,30 @@ struct ContentView: View {
                         Text(status.title)
                     case .loading:
                         Text("Loading...")
-                    case .loaded(let intervals):
-                        HStack(spacing: 0) {
-                            Text("Loaded \(intervals.count) chunks in ")
-                            Text(startDate!..<endDate!, format: Date.ComponentsFormatStyle(style: .condensedAbbreviated))
+                    case .loaded:
+                        VStack {
+                            HStack(spacing: 0) {
+                                Text("Loaded \(chunks.count) chunks.")
+                            }
+                            NavigationLink {
+                                ScrollView {
+                                    ChunksGridView()
+                                }
+                            } label: {
+                                Text("Look at the data")
+                            }
                         }
+                    case .storing:
+                        Text("Started storing")
+                    case .pauseStoring:
+                        Text("Paused storing")
+                    case .stored:
+                        Text("Stored")
                     }
                 }
                 .padding()
                 Button {
-                    switch loadingState {
-                    case .idle:
-                        startDate = Date()
-                        loadingState = .loading
-                        task = Task {
-                            try? await Task.sleep(nanoseconds: 2_500_000_000)
-                            let service = LayeringService(
-                                stepDataProvider: healthKitManager,
-                                storageProvider: .mock()
-                            )
-                            do {
-                                let intervals = try await service.performLayering()
-                                loadingState = .loaded(intervals)
-                                endDate = Date()
-                            } catch {
-                                print(error.localizedDescription)
-                                loadingState = .idle
-                                endDate = Date()
-                            }
-                        }
-                    case .loaded:
-                        loadingState = .idle
-                    case .loading:
-                        break
-                    }
+                    actionForState()
                 } label: {
                     switch loadingState {
                     case .idle:
@@ -79,7 +87,13 @@ struct ContentView: View {
                     case .loading:
                         ProgressView()
                     case .loaded:
-                        Text("Reload")
+                        Text("Start storing")
+                    case .storing:
+                        Text("Pause")
+                    case .pauseStoring:
+                        Text("Continue")
+                    case .stored:
+                        Text("Restart")
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -98,6 +112,13 @@ struct ContentView: View {
                         .buttonStyle(.bordered)
                     }
                 }
+            }
+        }
+        .onAppear {
+            if !chunks.isEmpty {
+                loadingState = .loaded
+            } else {
+                loadingState = .idle
             }
         }
     }
@@ -120,6 +141,39 @@ struct ContentView: View {
             break
         }
     }
+
+    private func actionForState() {
+        switch loadingState {
+        case .idle:
+            loadingState = .loading
+            layeringTask = Task {
+                let service = LayeringService(
+                    stepDataProvider: healthKitManager,
+                    storageProvider: .live(modelContext: modelContext)
+                )
+                do {
+                    let _ = try await service.performLayering()
+                    loadingState = .loaded
+                } catch {
+                    print(error.localizedDescription)
+                    loadingState = .idle
+                }
+            }
+        case .loaded:
+            // TODO: pause the storing
+            break
+        case .stored:
+            loadingState = .idle
+        case .loading:
+            break
+        case .storing:
+            // TODO: pause the storing
+            break
+        case .pauseStoring:
+            // TODO: continue the storing
+            break
+        }
+    }
 }
 
 extension LocalStorageProvider where Self == SwiftDataStorageProvider {
@@ -132,8 +186,4 @@ extension LocalStorageProvider where Self == MockStorageProvider {
     static func mock() -> MockStorageProvider {
         MockStorageProvider()
     }
-}
-
-#Preview {
-    ContentView()
 }

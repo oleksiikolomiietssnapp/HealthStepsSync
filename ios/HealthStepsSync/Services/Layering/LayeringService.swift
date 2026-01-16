@@ -6,13 +6,14 @@
 //
 
 import Foundation
+import OSLog
 
 @MainActor
 final class LayeringService: LayeringServiceProtocol {
 
     // MARK: - Constants
 
-    private let maxStepsPerInterval = 10_000
+    private(set) var maxStepsPerInterval = 10_000
     private let maxYearsBack = 10
     private let minIntervalDuration: TimeInterval = 3600 * 24
 
@@ -68,12 +69,14 @@ final class LayeringService: LayeringServiceProtocol {
             limit: maxStepsPerInterval,
             api: stepDataProvider
         )
+        os_log(.debug, "Layering id done")
 
         // 6. Save all intervals to LocalStorage
         for interval in intervals {
             storageProvider.insertInterval(interval)
         }
         try storageProvider.save()
+        os_log(.debug, "Saving id done")
 
         return intervals
     }
