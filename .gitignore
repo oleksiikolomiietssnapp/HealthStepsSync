@@ -1,0 +1,74 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+## Build generated
+build/
+DerivedData/
+
+## User settings
+xcuserdata/
+*.xcuserstate
+
+## compatibility with Xcode 8 and earlier
+*.xcscmblueprint
+*.xccheckout
+
+## compatibility with Xcode 9 and earlier
+*.moved-aside
+
+## Xcode Patch
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+
+## Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.pins
+Package.resolved
+
+## CocoaPods
+Pods/
+*.podspec
+
+## Carthage
+Carthage/Build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# API Data (user health data should not be committed)
+api/data/*.jsonl
+api/data/*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+.claude
