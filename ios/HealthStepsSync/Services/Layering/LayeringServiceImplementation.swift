@@ -15,14 +15,14 @@ final class LayeringServiceImplementation: LayeringService {
     private let maxYearsBack = 10
     private let minIntervalDuration: TimeInterval = 1800
 
-    private let stepDataProvider: StepDataProvider
+    private let StepDataSource: StepDataSource
     private let storageProvider: LocalStorageProvider
 
     init(
-        stepDataProvider: StepDataProvider,
+        stepDataSource: StepDataSource,
         storageProvider: LocalStorageProvider
     ) {
-        self.stepDataProvider = stepDataProvider
+        self.StepDataSource = stepDataSource
         self.storageProvider = storageProvider
     }
 
@@ -37,7 +37,7 @@ final class LayeringServiceImplementation: LayeringService {
 
         // 3. Check if any data exists
         let fullInterval = DateInterval(start: startDate, end: endDate)
-        let totalStepsData = try await stepDataProvider.getAggregatedStepData(for: fullInterval)
+        let totalStepsData = try await StepDataSource.getAggregatedStepData(for: fullInterval)
 
         guard totalStepsData.count > 0 else {
             let interval = SyncInterval(startDate: startDate, endDate: endDate, stepCount: 0)
@@ -63,7 +63,10 @@ final class LayeringServiceImplementation: LayeringService {
         for interval in intervals {
             storageProvider.insertInterval(interval)
         }
-//        try storageProvider.save()
+
+        // Saving right away slows the process
+        // System will save it when with delay and with no UI issue.
+        // try storageProvider.save()
 
         return intervals
     }
@@ -103,7 +106,7 @@ final class LayeringServiceImplementation: LayeringService {
                 let forcedStart = currentEnd.addingTimeInterval(-minIntervalDuration*4)
                 if forcedStart >= start {
                     let interval = DateInterval(start: forcedStart, end: currentEnd)
-                    let data = try await stepDataProvider.getAggregatedStepData(for: interval)
+                    let data = try await StepDataSource.getAggregatedStepData(for: interval)
                     intervals.append(SyncInterval(startDate: forcedStart, endDate: currentEnd, stepCount: data.count))
                     currentEnd = forcedStart
                 } else {
@@ -113,7 +116,7 @@ final class LayeringServiceImplementation: LayeringService {
             }
 
             let interval = DateInterval(start: optimalStart, end: currentEnd)
-            let data = try await stepDataProvider.getAggregatedStepData(for: interval)
+            let data = try await StepDataSource.getAggregatedStepData(for: interval)
 
             intervals.append(
                 SyncInterval(
@@ -128,6 +131,7 @@ final class LayeringServiceImplementation: LayeringService {
 
         return intervals.reversed()
     }
+
     func findOptimalStartDate(
         targetEnd: Date,
         earliestPossible: Date,
@@ -147,7 +151,7 @@ final class LayeringServiceImplementation: LayeringService {
             )
 
             let testInterval = DateInterval(start: mid, end: targetEnd)
-            let data = try await stepDataProvider.getAggregatedStepData(for: testInterval)
+            let data = try await StepDataSource.getAggregatedStepData(for: testInterval)
 
             let delta = abs(data.count - targetSteps)
             if delta < bestDelta {
@@ -172,7 +176,4 @@ final class LayeringServiceImplementation: LayeringService {
 
         return bestStart
     }
-
-
-
 }

@@ -31,3 +31,9 @@ class MockStorageProvider: LocalStorageProvider {
 
     }
 }
+
+extension LocalStorageProvider where Self == MockStorageProvider {
+    static func mock() -> MockStorageProvider {
+        MockStorageProvider()
+    }
+}

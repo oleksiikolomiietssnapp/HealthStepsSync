@@ -8,7 +8,7 @@
 import Foundation
 
 class WorstCaseMockStatisticsQueryProvider: MockStatisticsQueryProvider {
-    override func getAggregatedStepCount(for interval: DateInterval) async throws -> AggregatedStepData {
+    override func fetchAggregatedStepCount(for interval: DateInterval) async throws -> AggregatedStepData {
         AggregatedStepData(
             count: generateMockStepCount(for: interval),
             startDate: interval.start,

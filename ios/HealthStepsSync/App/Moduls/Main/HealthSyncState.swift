@@ -36,8 +36,8 @@ enum HealthSyncState: Equatable {
         }
     }
 
-    init(chunks: [SyncInterval]) {
-        guard !chunks.isEmpty else {
+    init(chunks: [SyncInterval]?) {
+        guard let chunks, !chunks.isEmpty else {
             self = .idle
             return
         }

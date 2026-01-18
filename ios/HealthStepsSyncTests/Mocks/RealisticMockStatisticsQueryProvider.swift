@@ -10,7 +10,7 @@ import Foundation
 class RealisticMockStatisticsQueryProvider: MockStatisticsQueryProvider {
     private let avgStepsPerDay: ClosedRange<Int> = 3000...30000
 
-    override func getAggregatedStepCount(for interval: DateInterval) async throws -> AggregatedStepData {
+    override func fetchAggregatedStepCount(for interval: DateInterval) async throws -> AggregatedStepData {
         AggregatedStepData(count: generateMockStepCount(for: interval), startDate: interval.start, endDate: interval.end)
     }
 

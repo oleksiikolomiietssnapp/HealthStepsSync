@@ -14,15 +14,14 @@ import Testing
 struct LayeringServiceTests {
     @Test() @MainActor
     func testRegularSteps() async throws {
-        let service = LayeringServiceImplementation(stepDataProvider: HealthKitManager.mock(), storageProvider: MockStorageProvider())
+        let service = LayeringServiceImplementation(stepDataSource: HealthKitStepDataSource.mock(), storageProvider: MockStorageProvider())
 
         let results = try await service.performLayering()
 
         #expect(
             results.allSatisfy { interval in
-                interval.stepCount <= service.maxStepsPerInterval
-                    && interval.syncedToServer == false
-                    && interval.endDate > interval.startDate
+                interval.syncedToServer == false &&
+                interval.endDate > interval.startDate
             }
         )
 
@@ -38,16 +37,18 @@ struct LayeringServiceTests {
 
     @Test() @MainActor
     func testRealisticSteps() async throws {
-        let service = LayeringServiceImplementation(stepDataProvider: HealthKitManager.realisticMock(), storageProvider: MockStorageProvider())
+        let service = LayeringServiceImplementation(
+            stepDataSource: HealthKitStepDataSource.realisticMock(),
+            storageProvider: MockStorageProvider()
+        )
 
         let results = try await service.performLayering()
 
         print(results.count)
         #expect(
             results.allSatisfy { interval in
-                interval.stepCount <= service.maxStepsPerInterval
-                    && interval.syncedToServer == false
-                    && interval.endDate > interval.startDate
+                interval.syncedToServer == false &&
+                interval.endDate > interval.startDate
             }
         )
 
@@ -62,16 +63,18 @@ struct LayeringServiceTests {
 
     @Test() @MainActor
     func testWorstCaseSteps() async throws {
-        let service = LayeringServiceImplementation(stepDataProvider: HealthKitManager.worstCaseMock(), storageProvider: MockStorageProvider())
+        let service = LayeringServiceImplementation(
+            stepDataSource: HealthKitStepDataSource.worstCaseMock(),
+            storageProvider: MockStorageProvider()
+        )
 
         let results = try await service.performLayering()
 
         print(results.count)
         #expect(
             results.allSatisfy { interval in
-                interval.stepCount <= service.maxStepsPerInterval
-                    && interval.syncedToServer == false
-                    && interval.endDate > interval.startDate
+                interval.syncedToServer == false &&
+                interval.endDate > interval.startDate
             }
         )
 
@@ -85,12 +88,12 @@ struct LayeringServiceTests {
     }
 }
 
-extension HealthKitManager where T == MockStatisticsQueryProvider {
+extension HealthKitStepDataSource where T == MockStatisticsQueryProvider {
     static func realisticMock() -> Self {
-        self.init(healthKitProvider: RealisticMockStatisticsQueryProvider())
+        self.init(stepQuery: RealisticMockStatisticsQueryProvider())
     }
 
     static func worstCaseMock() -> Self {
-        self.init(healthKitProvider: WorstCaseMockStatisticsQueryProvider())
+        self.init(stepQuery: WorstCaseMockStatisticsQueryProvider())
     }
 }

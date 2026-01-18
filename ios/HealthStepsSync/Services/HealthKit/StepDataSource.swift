@@ -1,14 +1,14 @@
 //
-//  StepDataProvider.swift
+//  StepDataSource.swift
 //  HealthStepsSync
 //
 //  Created by Oleksii Kolomiiets on 1/15/26.
 
 import Foundation
 
-/// Protocol for step data providers (real HealthKit or mock)
+/// Protocol for step data source
 @MainActor
-protocol StepDataProvider {
+protocol StepDataSource {
     /// Check if the data source is available
     var isAvailable: Bool { get }
 

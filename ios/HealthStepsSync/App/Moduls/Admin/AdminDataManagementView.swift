@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AdminDataManagementView: View {
-    @Environment(\.healthKitManager) var healthKitManager
+    @Environment(\.healthKitDataSource) var healthKitDataSource
 
     @State private var selectedAction: DataAction?
     @State private var isLoading = false
@@ -91,19 +91,19 @@ struct AdminDataManagementView: View {
         do {
             switch action {
             case .addMonth:
-                try await healthKitManager.addRealisticStepDataForPastMonth()
+                try await healthKitDataSource.addRealisticStepDataForPastMonth()
                 statusMessage = "Added data for past month"
 
             case .addYear:
-                try await healthKitManager.addRealisticStepDataForPastYear()
+                try await healthKitDataSource.addRealisticStepDataForPastYear()
                 statusMessage = "Added data for past year"
 
             case .add10Years:
-                try await healthKitManager.addRealisticStepDataForPast10Years()
+                try await healthKitDataSource.addRealisticStepDataForPast10Years()
                 statusMessage = "Added data for past 10 years"
 
             case .removeAll:
-                try await healthKitManager.removeAllStepData()
+                try await healthKitDataSource.removeAllStepData()
                 statusMessage = "Removed all step data"
             }
 

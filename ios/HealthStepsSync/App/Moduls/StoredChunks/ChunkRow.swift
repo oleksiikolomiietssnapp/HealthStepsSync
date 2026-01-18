@@ -1,47 +1,13 @@
 //
-//  StoredChunksView.swift
+//  ChunkRow.swift
 //  HealthStepsSync
 //
-//  Created by Oleksii Kolomiiets on 1/17/26.
+//  Created by Oleksii Kolomiiets on 1/18/26.
 //
 
-import SwiftData
 import SwiftUI
 
-struct StoredChunksView: View {
-    @Query(sort: \SyncInterval.startDate)
-    var chunks: [SyncInterval]
-    @Environment(\.modelContext) private var modelContext
-
-    var body: some View {
-        List {
-            if chunks.isEmpty {
-                ContentUnavailableView("No Chunks", systemImage: "tray.fill")
-            } else {
-                ForEach(chunks) { chunk in
-                    ChunkRow(chunk: chunk)
-                }
-            }
-        }
-        .navigationTitle("Stored Chunks")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(role: .destructive) {
-                    removeAllChunks()
-                } label: {
-                    Image(systemName: "trash")
-                }
-            }
-        }
-    }
-
-    private func removeAllChunks() {
-        try? modelContext.delete(model: SyncInterval.self)
-    }
-}
-
-private struct ChunkRow: View {
+struct ChunkRow: View {
     let chunk: SyncInterval
 
     var body: some View {
@@ -76,9 +42,4 @@ private struct ChunkRow: View {
         }
         .padding(.vertical, 4)
     }
-}
-
-#Preview {
-    StoredChunksView()
-        .modelContainer(for: SyncInterval.self, inMemory: true)
 }

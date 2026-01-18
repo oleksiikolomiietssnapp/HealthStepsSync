@@ -27,6 +27,7 @@
 			membershipExceptions = (
 				"Mocks/Bool+extensions.swift",
 				Mocks/MockStatisticsQueryProvider.swift,
+				Mocks/MockStorageProvider.swift,
 				Mocks/RealisticMockStatisticsQueryProvider.swift,
 				Mocks/WorstCaseMockStatisticsQueryProvider.swift,
 			);
@@ -37,6 +38,7 @@
 			membershipExceptions = (
 				"Mocks/Bool+extensions.swift",
 				Mocks/MockStatisticsQueryProvider.swift,
+				Mocks/MockStorageProvider.swift,
 				Mocks/RealisticMockStatisticsQueryProvider.swift,
 				Mocks/WorstCaseMockStatisticsQueryProvider.swift,
 			);

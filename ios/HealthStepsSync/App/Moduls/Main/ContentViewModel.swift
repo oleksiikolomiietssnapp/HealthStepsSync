@@ -14,7 +14,7 @@ final class ContentViewModel {
     var state: HealthSyncState
     private var currentTask: Task<Void, Never>?
 
-    private let healthKitManager: StepDataProvider
+    private let stepDataSource: StepDataSource
     private let maxConcurrentSyncs: Int
     private let layeringService: LayeringService
     private let apiSyncService: SyncService
@@ -22,19 +22,19 @@ final class ContentViewModel {
     private let modelContext: ModelContext
 
     var healthAuthState: HealthKitAuthStatus {
-        healthKitManager.authStatus
+        stepDataSource.authStatus
     }
 
     init(
-        chunks: [SyncInterval],
-        healthKitManager: some StepDataProvider,
+        chunks: [SyncInterval]?,
+        stepDataSource: some StepDataSource,
         layeringService: some LayeringService,
         apiSyncService: some SyncService,
         network: some NetworkService,
         modelContext: ModelContext,
         maxConcurrentSyncs: Int = 3
     ) {
-        self.healthKitManager = healthKitManager
+        self.stepDataSource = stepDataSource
         self.maxConcurrentSyncs = maxConcurrentSyncs
         self.layeringService = layeringService
         self.apiSyncService = apiSyncService
@@ -46,23 +46,23 @@ final class ContentViewModel {
     func requestHealthAuthorization() {
         Task {
             do {
-                try await healthKitManager.requestAuthorization()
+                try await stepDataSource.requestAuthorization()
             } catch {
                 os_log(.error, "HealthKit authorization error: %@", error.localizedDescription)
             }
         }
     }
 
-    func performAction(unsyncedChunks: [SyncInterval], totalChunks: Int) {
+    func performAction(unsynchronizedChunks: [SyncInterval], totalChunks: Int) {
         switch state {
         case .idle:
             startLayering()
         case .readyToSync:
-            startSyncing(chunks: unsyncedChunks, total: totalChunks)
+            startSyncing(chunks: unsynchronizedChunks, total: totalChunks)
         case .syncing:
             pauseSyncing()
         case .paused:
-            resumeSyncing(chunks: unsyncedChunks, synced: totalChunks - unsyncedChunks.count, total: totalChunks)
+            resumeSyncing(chunks: unsynchronizedChunks, synced: totalChunks - unsynchronizedChunks.count, total: totalChunks)
         case .completed, .failed:
             reset()
         case .layering:

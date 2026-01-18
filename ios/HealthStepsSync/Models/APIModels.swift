@@ -16,7 +16,7 @@ struct PostStepsRequest: Codable {
 }
 
 /// Response payload for POST /steps
-struct PostStepsResponse: Codable {
+struct PostResponse: Codable {
     let saved: Int
     let message: String
 }
@@ -28,7 +28,7 @@ struct GetStepsResponse: Codable {
 }
 
 /// Response payload for DELETE /steps
-struct DeleteStepsResponse: Codable {
+struct DeleteResponse: Codable {
     let message: String
 }
 

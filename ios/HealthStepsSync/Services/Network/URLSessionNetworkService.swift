@@ -7,7 +7,7 @@
 
 import Foundation
 
-class URLSessionNetworkService: NetworkService {
+final class URLSessionNetworkService: NetworkService {
     private let session: URLSession
     private let decoder: JSONDecoder = JSONDecoder()
     private let encoder = JSONEncoder()
@@ -32,7 +32,8 @@ class URLSessionNetworkService: NetworkService {
         }
     }
 
-    func post<Request: Encodable, Response: Decodable>(_ endpoint: EndpointProvider, body: Request) async throws -> Response {
+    @discardableResult
+    func post<Request: Encodable>(_ endpoint: EndpointProvider, body: Request) async throws -> PostResponse {
         guard var request = endpoint.makeRequest() else {
             throw NetworkServiceError.badURL(endpoint)
         }
@@ -48,13 +49,14 @@ class URLSessionNetworkService: NetworkService {
         try validateResponse(response)
 
         do {
-            return try decoder.decode(Response.self, from: data)
+            return try decoder.decode(PostResponse.self, from: data)
         } catch {
             throw NetworkServiceError.decodingError(error)
         }
     }
 
-    func delete<Response: Decodable>(_ endpoint: EndpointProvider) async throws -> Response {
+    @discardableResult
+    func delete(_ endpoint: EndpointProvider) async throws -> DeleteResponse {
         guard let request = endpoint.makeRequest() else {
             throw NetworkServiceError.badURL(endpoint)
         }
@@ -64,7 +66,7 @@ class URLSessionNetworkService: NetworkService {
         try validateResponse(response)
 
         do {
-            return try decoder.decode(Response.self, from: data)
+            return try decoder.decode(DeleteResponse.self, from: data)
         } catch {
             throw NetworkServiceError.decodingError(error)
         }

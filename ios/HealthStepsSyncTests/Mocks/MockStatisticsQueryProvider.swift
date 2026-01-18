@@ -7,27 +7,16 @@
 
 import Foundation
 
+extension HealthKitStepDataSource where T == MockStatisticsQueryProvider {
+    static func mock() -> Self {
+        self.init(stepQuery: MockStatisticsQueryProvider())
+    }
+}
+
 @MainActor
-class MockStatisticsQueryProvider: StatisticsQueryProvider {
-    func removeAllStepData() async throws {
-
-    }
-
-    func addRealisticStepDataForPastYear() async throws {
-
-    }
-
-    func addRealisticStepDataForPast10Years() async throws {
-        
-    }
-
-    func addRealisticStepDataForPastMonth() async throws {
-
-    }
-
-    var isAvailable: Bool {
-        true
-    }
+class MockStatisticsQueryProvider: StepStatisticsQuerying {
+    let isAvailable: Bool = true
+    let authorizationStatus: HealthKitAuthStatus = .authorized
     // MARK: - Configuration
 
     /// Average steps per day for mock data generation
@@ -42,21 +31,17 @@ class MockStatisticsQueryProvider: StatisticsQueryProvider {
         self.seed = seed
     }
 
-    // MARK: - StatisticsQueryProvider
+    // MARK: - StepStatisticsQuerying
 
     func requestAuthorization() async throws {
 
     }
 
-    func authorizationStatus() -> HealthKitAuthStatus {
-        .authorized
-    }
-
-    func getAggregatedStepCount(for interval: DateInterval) async throws -> AggregatedStepData {
+    func fetchAggregatedStepCount(for interval: DateInterval) async throws -> AggregatedStepData {
         AggregatedStepData(count: generateMockStepCount(for: interval), startDate: interval.start, endDate: interval.end)
     }
 
-    func getRawStepSamples(for interval: DateInterval) async throws -> [StepSampleData] {
+    func fetchStepSamples(for interval: DateInterval) async throws -> [StepSampleData] {
         generateMockStepSamples(for: interval)
     }
 

@@ -6,12 +6,14 @@
 //
 
 import OSLog
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct HealthStepsSyncApp: App {
-    @Environment(\.healthKitManager) var healthKitManager
+    @Environment(\.healthKitDataSource) var stepDataSource
+    @Environment(\.networkService) var networkService
+
     private let modelContainer: ModelContainer
 
     init() {
@@ -29,32 +31,33 @@ struct HealthStepsSyncApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                ContentView(healthKitManager: healthKitManager, modelContext: modelContainer.mainContext)
-                    .task {
-                        do {
-                            try await healthKitManager.requestAuthorization()
-                        } catch {
-                            os_log("Error: %@", error.localizedDescription)
-                        }
-                    }
+                ContentView(
+                    layeringService: LayeringServiceImplementation(
+                        stepDataSource: stepDataSource,
+                        storageProvider: .live(modelContext: modelContainer.mainContext)
+                    ),
+                    apiSyncService: SyncServiceImplementation(
+                        stepDataSource: stepDataSource,
+                        network: networkService,
+                        storageProvider: .live(modelContext: modelContainer.mainContext)
+                    ),
+                    stepDataSource: stepDataSource,
+                    networkService: networkService,
+                    modelContext: modelContainer.mainContext
+                )
+                .task {
+                    await requestAuthorization()
+                }
             }
         }
         .modelContainer(modelContainer)
     }
-}
 
-extension EnvironmentValues {
-    @Entry var healthKitManager: HealthKitManager = .live()
-}
-
-extension HealthKitManager where T == HealthKitStatisticsQueryProvider {
-    static func live() -> Self {
-        self.init(healthKitProvider: HealthKitStatisticsQueryProvider())
-    }
-}
-
-extension HealthKitManager where T == MockStatisticsQueryProvider {
-    static func mock() -> Self {
-        self.init(healthKitProvider: MockStatisticsQueryProvider())
+    private func requestAuthorization() async {
+        do {
+            try await stepDataSource.requestAuthorization()
+        } catch {
+            os_log("Error: %@", error.localizedDescription)
+        }
     }
 }

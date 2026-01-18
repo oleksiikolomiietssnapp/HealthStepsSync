@@ -5,14 +5,10 @@ protocol NetworkService {
     func get<Response: Decodable>(_ endpoint: EndpointProvider) async throws -> Response
 
     /// Performs a POST request with an encoded body
-    func post<Request: Encodable, Response: Decodable>(_ endpoint: EndpointProvider, body: Request) async throws -> Response
+    @discardableResult
+    func post<Request: Encodable>(_ endpoint: EndpointProvider, body: Request) async throws -> PostResponse
 
     /// Performs a DELETE request to the specified endpoint
-    func delete(_ endpoint: EndpointProvider) async throws -> DeleteStepsResponse
-}
-
-extension NetworkService where Self == URLSessionNetworkService {
-    static var live: Self {
-        URLSessionNetworkService()
-    }
+    @discardableResult
+    func delete(_ endpoint: EndpointProvider) async throws -> DeleteResponse
 }
