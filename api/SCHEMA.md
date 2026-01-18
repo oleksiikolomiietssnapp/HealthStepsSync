@@ -141,6 +141,50 @@ curl http://localhost:8000/steps
 
 ---
 
+### DELETE /steps
+
+Delete all stored step samples from the server.
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:8000/steps
+```
+
+**Response (Success):**
+```json
+{
+  "message": "All steps deleted successfully"
+}
+```
+
+**Status Code:** 200
+
+**Response (No Data to Delete):**
+```json
+{
+  "message": "No steps file to delete"
+}
+```
+
+**Status Code:** 200
+
+**Response (Server Error):**
+```json
+{
+  "error": "Server error: [error details]"
+}
+```
+
+**Status Code:** 500
+
+**Notes:**
+- Deletes the entire `api/data/steps.jsonl` file
+- Always returns success (200) even if no data exists
+- This is a destructive operation - all stored samples are permanently removed
+- The app uses this when the user taps the trash button to clear all local chunks and server data
+
+---
+
 ## Data Schema
 
 ### StepSampleData
