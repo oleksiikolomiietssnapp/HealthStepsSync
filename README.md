@@ -91,7 +91,7 @@ The app automatically uses `localhost` for simulator builds and your Mac's IP fo
 
 ## Demo Video
 
-[Demo video - showing complete workflow]
+https://github.com/user-attachments/assets/02955a0a-8b81-4f8e-b540-c79bd1b1a0ab
 
 The demo shows:
 1. **Install & Setup** - Launch app, accept HealthKit sharing permissions
