@@ -9,6 +9,7 @@ import Foundation
 
 protocol LocalStorageProvider {
     func insertInterval(_ interval: SyncInterval)
+    func updateSyncedToServer(_ id: UUID) async throws
     func deleteIntervals() throws
     func save() throws
 }

@@ -14,4 +14,9 @@ protocol StatisticsQueryProvider {
     func authorizationStatus() -> HealthKitAuthStatus
     func getAggregatedStepCount(for interval: DateInterval) async throws -> AggregatedStepData
     func getRawStepSamples(for interval: DateInterval) async throws -> [StepSampleData]
+
+    func addRealisticStepDataForPastMonth() async throws
+    func removeAllStepData() async throws
+    func addRealisticStepDataForPastYear() async throws
+    func addRealisticStepDataForPast10Years() async throws
 }

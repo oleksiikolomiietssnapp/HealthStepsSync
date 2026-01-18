@@ -12,6 +12,8 @@ protocol StepDataProvider {
     /// Check if the data source is available
     var isAvailable: Bool { get }
 
+    var authStatus: HealthKitAuthStatus { get }
+
     /// Request authorization to read step count data
     func requestAuthorization() async throws
 

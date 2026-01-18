@@ -12,8 +12,7 @@ import SwiftData
 @main
 struct HealthStepsSyncApp: App {
     @Environment(\.healthKitManager) var healthKitManager
-    let modelContainer: ModelContainer
-    @Query var chunks: [SyncInterval]
+    private let modelContainer: ModelContainer
 
     init() {
         do {
@@ -30,7 +29,7 @@ struct HealthStepsSyncApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                ContentView(loadingState: HealthSyncState(chunks: chunks))
+                ContentView(healthKitManager: healthKitManager, modelContext: modelContainer.mainContext)
                     .task {
                         do {
                             try await healthKitManager.requestAuthorization()
@@ -45,7 +44,7 @@ struct HealthStepsSyncApp: App {
 }
 
 extension EnvironmentValues {
-    @Entry var healthKitManager: HealthKitManager = .mock()
+    @Entry var healthKitManager: HealthKitManager = .live()
 }
 
 extension HealthKitManager where T == HealthKitStatisticsQueryProvider {

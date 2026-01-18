@@ -21,14 +21,51 @@
 		53AAFB8C2F1925DC0068089C /* HealthStepsSyncTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HealthStepsSyncTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		537A5C8D2F1C33CC005FB797 /* Exceptions for "HealthStepsSyncTests" folder in "HealthStepsSync" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Mocks/Bool+extensions.swift",
+				Mocks/MockStatisticsQueryProvider.swift,
+				Mocks/RealisticMockStatisticsQueryProvider.swift,
+				Mocks/WorstCaseMockStatisticsQueryProvider.swift,
+			);
+			target = 53AAF9A62F18CD070068089C /* HealthStepsSync */;
+		};
+		537A5C8E2F1C33CC005FB797 /* Exceptions for "HealthStepsSyncTests" folder in "HealthStepsSyncTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Mocks/Bool+extensions.swift",
+				Mocks/MockStatisticsQueryProvider.swift,
+				Mocks/RealisticMockStatisticsQueryProvider.swift,
+				Mocks/WorstCaseMockStatisticsQueryProvider.swift,
+			);
+			target = 53AAFB8B2F1925DC0068089C /* HealthStepsSyncTests */;
+		};
+		53B1C7CD2F1ADA510030A939 /* Exceptions for "HealthStepsSync" folder in "HealthStepsSync" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 53AAF9A62F18CD070068089C /* HealthStepsSync */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		53AAF9A92F18CD070068089C /* HealthStepsSync */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				53B1C7CD2F1ADA510030A939 /* Exceptions for "HealthStepsSync" folder in "HealthStepsSync" target */,
+			);
 			path = HealthStepsSync;
 			sourceTree = "<group>";
 		};
 		53AAFB8D2F1925DC0068089C /* HealthStepsSyncTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				537A5C8D2F1C33CC005FB797 /* Exceptions for "HealthStepsSyncTests" folder in "HealthStepsSync" target */,
+				537A5C8E2F1C33CC005FB797 /* Exceptions for "HealthStepsSyncTests" folder in "HealthStepsSyncTests" target */,
+			);
 			path = HealthStepsSyncTests;
 			sourceTree = "<group>";
 		};
@@ -336,6 +373,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HealthStepsSync/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "This app needs access to your step count data to sync it with your personal health dashboard.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app needs access to your step count data to sync it with your personal health dashboard.";
@@ -398,6 +436,7 @@
 				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HealthStepsSync/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "This app needs access to your step count data to sync it with your personal health dashboard.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app needs access to your step count data to sync it with your personal health dashboard.";

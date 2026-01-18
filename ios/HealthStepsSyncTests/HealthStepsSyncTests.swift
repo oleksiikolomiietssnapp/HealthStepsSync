@@ -14,7 +14,7 @@ import Testing
 struct LayeringServiceTests {
     @Test() @MainActor
     func testRegularSteps() async throws {
-        let service = LayeringService(stepDataProvider: HealthKitManager.mock(), storageProvider: MockStorageProvider())
+        let service = LayeringServiceImplementation(stepDataProvider: HealthKitManager.mock(), storageProvider: MockStorageProvider())
 
         let results = try await service.performLayering()
 
@@ -38,7 +38,7 @@ struct LayeringServiceTests {
 
     @Test() @MainActor
     func testRealisticSteps() async throws {
-        let service = LayeringService(stepDataProvider: HealthKitManager.realisticMock(), storageProvider: MockStorageProvider())
+        let service = LayeringServiceImplementation(stepDataProvider: HealthKitManager.realisticMock(), storageProvider: MockStorageProvider())
 
         let results = try await service.performLayering()
 
@@ -62,7 +62,7 @@ struct LayeringServiceTests {
 
     @Test() @MainActor
     func testWorstCaseSteps() async throws {
-        let service = LayeringService(stepDataProvider: HealthKitManager.worstCaseMock(), storageProvider: MockStorageProvider())
+        let service = LayeringServiceImplementation(stepDataProvider: HealthKitManager.worstCaseMock(), storageProvider: MockStorageProvider())
 
         let results = try await service.performLayering()
 

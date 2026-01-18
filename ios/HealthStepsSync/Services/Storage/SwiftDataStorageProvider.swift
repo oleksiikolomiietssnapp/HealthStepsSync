@@ -26,4 +26,17 @@ class SwiftDataStorageProvider: LocalStorageProvider {
     func save() throws {
         try modelContext.save()
     }
+
+    func updateSyncedToServer(_ id: UUID) async throws {
+        let backgroundContext = ModelContext(modelContext.container)
+        let descriptor = FetchDescriptor<SyncInterval>(
+            predicate: #Predicate { $0.id == id }
+        )
+
+        if let model = try backgroundContext.fetch(descriptor).first {
+            model.syncedToServer = true
+            // Autosave handles persistence
+//            try backgroundContext.save()
+        }
+    }
 }

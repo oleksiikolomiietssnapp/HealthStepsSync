@@ -36,7 +36,15 @@ final class HealthKitManager<T: StatisticsQueryProvider>: StepDataProvider {
     /// - Parameter interval: The time interval to query
     /// - Returns: Total step count in the interval
     func getAggregatedStepData(for interval: DateInterval) async throws -> AggregatedStepData {
-        try await healthKitProvider.getAggregatedStepCount(for: interval)
+        if let result = try? await healthKitProvider.getAggregatedStepCount(for: interval) {
+            return result
+        } else {
+            return AggregatedStepData(
+                count: 0,
+                startDate: interval.start,
+                endDate: interval.end
+            )
+        }
     }
 
     // MARK: - Raw Sample Query (Stage 2a - Fetching)
@@ -59,5 +67,31 @@ final class HealthKitManager<T: StatisticsQueryProvider>: StepDataProvider {
     func fetchStepSamples(from: Date, to: Date) async throws -> [StepSampleData] {
         let interval = DateInterval(start: from, end: to)
         return try await getRawStepSamples(for: interval)
+    }
+
+    func feedSimulator() async throws {
+        try await healthKitProvider.addRealisticStepDataForPastMonth()
+    }
+
+    // MARK: - Admin Data Manipulation (Testing/Development)
+
+    /// Add realistic step data for the past month
+    func addRealisticStepDataForPastMonth() async throws {
+        try await healthKitProvider.addRealisticStepDataForPastMonth()
+    }
+
+    /// Add realistic step data for the past year
+    func addRealisticStepDataForPastYear() async throws {
+        try await healthKitProvider.addRealisticStepDataForPastYear()
+    }
+
+    /// Add realistic step data for the past 10 years
+    func addRealisticStepDataForPast10Years() async throws {
+        try await healthKitProvider.addRealisticStepDataForPast10Years()
+    }
+
+    /// Remove all step data from HealthKit
+    func removeAllStepData() async throws {
+        try await healthKitProvider.removeAllStepData()
     }
 }

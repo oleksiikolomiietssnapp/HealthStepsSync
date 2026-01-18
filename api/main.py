@@ -74,13 +74,27 @@ def get_steps():
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 
+@app.route('/steps', methods=['DELETE'])
+def delete_all_steps():
+    """Delete all stored step samples"""
+    try:
+        with file_lock:
+            if os.path.exists(JSONL_FILE):
+                os.remove(JSONL_FILE)
+                return jsonify({'message': 'All steps deleted successfully'}), 200
+            else:
+                return jsonify({'message': 'No steps file to delete'}), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'ok'}), 200
 
-
 if __name__ == '__main__':
     print("Starting Flask API server on http://0.0.0.0:8000")
     print(f"Data will be stored in: {JSONL_FILE}")
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True, threaded=True)

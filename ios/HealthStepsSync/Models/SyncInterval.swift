@@ -1,11 +1,12 @@
 import Foundation
 import SwiftData
 
-/// Represents a date interval containing step data, discovered by LayeringService
+/// Represents a date interval containing step data, discovered by LayeringServiceImplementation
 /// Used for Stage 1 (Layering) - discovering intervals with ≤10,000 steps each
 @Model
 final class SyncInterval {
-    @Attribute(.unique) var id: UUID
+    @Attribute(.unique)
+    var id: UUID
     var startDate: Date
     var endDate: Date
     var stepCount: Int

@@ -9,6 +9,22 @@ import Foundation
 
 @MainActor
 class MockStatisticsQueryProvider: StatisticsQueryProvider {
+    func removeAllStepData() async throws {
+
+    }
+
+    func addRealisticStepDataForPastYear() async throws {
+
+    }
+
+    func addRealisticStepDataForPast10Years() async throws {
+        
+    }
+
+    func addRealisticStepDataForPastMonth() async throws {
+
+    }
+
     var isAvailable: Bool {
         true
     }
@@ -16,9 +32,6 @@ class MockStatisticsQueryProvider: StatisticsQueryProvider {
 
     /// Average steps per day for mock data generation
     private let avgStepsPerDay: ClosedRange<Int> = 3000...30000
-
-    /// Simulate network delay (in nanoseconds)
-    private let simulatedDelay: UInt64 = 5_000
 
     /// Optional seed for reproducible results (nil = random)
     private let seed: Int?
@@ -44,44 +57,50 @@ class MockStatisticsQueryProvider: StatisticsQueryProvider {
     }
 
     func getRawStepSamples(for interval: DateInterval) async throws -> [StepSampleData] {
-        // Simulate network/query delay (slightly longer than aggregated)
-        try await Task.sleep(nanoseconds: simulatedDelay)  // 100ms
-
-        return generateMockStepSamples(for: interval)
+        generateMockStepSamples(for: interval)
     }
 
     // MARK: - Mock Sample Generation
 
     private func generateMockStepSamples(for interval: DateInterval) -> [StepSampleData] {
         var samples: [MockStepSample] = []
+        samples.reserveCapacity(1000)  // Pre-allocate reasonable size
+
         var currentDate = interval.start
+        let calendar = Calendar.current
 
         while currentDate < interval.end {
-            // 50-200 samples per day (walking sessions, background counting, etc.)
             let samplesPerDay = Int.random(in: 50...200)
-            let secondsPerSample = 86400 / samplesPerDay
+            let dayEnd = min(
+                calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: currentDate))!,
+                interval.end
+            )
+
+            let secondsAvailable = dayEnd.timeIntervalSince(currentDate)
+            let secondsPerSample = secondsAvailable / Double(samplesPerDay)
 
             for _ in 0..<samplesPerDay {
-                let sampleDuration = TimeInterval.random(in: 30...300)  // 30s to 5min
-                let endDate = currentDate.addingTimeInterval(sampleDuration)
+                let duration = TimeInterval.random(in: 30...300)
+                let endDate = min(currentDate.addingTimeInterval(duration), dayEnd)
 
                 guard endDate <= interval.end else { break }
 
-                let sample = MockStepSample(
-                    uuid: UUID(),
-                    startDate: currentDate,
-                    endDate: endDate,
-                    count: Int.random(in: 10...500),
-                    sourceBundleId: "com.apple.health.mock",
-                    sourceDeviceName: HealthDeviceModel.random.rawValue
+                samples.append(
+                    MockStepSample(
+                        uuid: UUID(),
+                        startDate: currentDate,
+                        endDate: endDate,
+                        count: Int.random(in: 10...500),
+                        sourceBundleId: "com.apple.health.mock",
+                        sourceDeviceName: "iPhone SE"
+                    )
                 )
-                samples.append(sample)
 
-                currentDate = currentDate.addingTimeInterval(TimeInterval(secondsPerSample))
+                currentDate = currentDate.addingTimeInterval(secondsPerSample)
+                if currentDate >= dayEnd { break }
             }
 
-            // Move to next day
-            currentDate = Calendar.current.startOfDay(for: currentDate.addingTimeInterval(86400))
+            currentDate = calendar.startOfDay(for: currentDate.addingTimeInterval(86400))
         }
 
         return samples
@@ -136,8 +155,6 @@ class MockStatisticsQueryProvider: StatisticsQueryProvider {
         }
     }
 }
-
-
 
 // MARK: - Mock Step Sample
 
