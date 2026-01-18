@@ -1,97 +1,156 @@
 # iOS Health Steps Sync
 
-A prototype iOS app demonstrating an efficient layering algorithm for discovering step count data from Apple Health, with a complementary Python API server for syncing step data. Currently implements Stage 1: the layering algorithm discovers date intervals with step data using aggregated queries and stores them to SwiftData. (Stage 2 fetching/API sync is planned but not yet implemented in the UI.)
+An iOS app that reads **raw step count data** from Apple Health and syncs it to a local Python API server. The API persists all synced step data to a `.jsonl` file.
 
-## Requirements
+## Project Structure
+
+```
+HealthStepsSync/
+├── api/                               # Python API server
+│   ├── main.py
+│   ├── requirements.txt
+│   └── data/
+│       └── steps.jsonl
+├── ios/                               # iOS app (SwiftUI)
+│   └── HealthStepsSync/
+│       ├── App/
+│       ├── Models/
+│       ├── Services/
+│       ├── Views/
+│       └── HealthStepsSync.xcodeproj
+├── Planning/                          # Architecture & design docs
+├── README.md
+└── Task.md
+```
+
+## Task Requirements
+
+The assignment requires building:
+
+1. **iOS App** (`ios/` directory)
+   - Read raw step samples from Apple Health (not aggregated data)
+   - Support full history sync (up to ~10 years back)
+   - Implement safe, efficient syncing for large data volumes
+   - Send data to the local API server
+
+2. **Python API Server** (`api/` directory)
+   - Accept step data from the iOS app
+   - Persist data to a `.jsonl` file
+   - Provide endpoints for storing and retrieving step data
+
+## System Requirements
 
 - **iOS App**: Xcode 15+, iOS 17.0+
-
-## Current Implementation Status
-
-✅ **Implemented:**
-- Stage 1: Layering algorithm (discovers date intervals with ≤10,000 steps)
-- Mock HealthKit data generation (2+ years of realistic step data)
-- SwiftData storage of discovered intervals
-- Basic UI showing layering results
-- Python API server with step data storage and retrieval endpoints
-
-🚧 **Planned (not yet implemented):**
-- Stage 2a: Fetching raw step samples from discovered intervals
-- Stage 2b: API synchronization from iOS app
-- Settings UI for API configuration
-- Complete end-to-end sync workflow
+- **API Server**: Python 3.8+
 
 ## Setup & Running
 
+### 1. Start the API Server
+
+```bash
+cd api
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python3 main.py
+```
+
+The API will be available at `http://localhost:8000`
+
+See [api/README.md](api/README.md) for detailed setup and [api/SCHEMA.md](api/SCHEMA.md) for API documentation.
+
+### 2. Run the iOS App
+
 1. Open `ios/HealthStepsSync.xcodeproj` in Xcode
-2. Select your target device or simulator
+2. Select target device/simulator
 3. Build and run (⌘R)
-4. Tap "Chunk" to run the layering algorithm
-5. View discovered intervals and timing results
+4. Grant HealthKit permissions when prompted
+5. Tap "Sync" to start syncing all available step data
+6. Monitor sync progress in the app UI
+7. Use the nav bar button to review stored and synced data
+8. Check `api/data/steps.jsonl` to verify persisted data
 
-## API Server
+## Implementation Strategy
 
-A Python Flask API server is available in the `api/` folder for storing and retrieving step data.
+The app uses a **layering algorithm** to efficiently discover date intervals containing step data. Instead of querying all raw samples at once (which could be millions of data points over 10 years), the algorithm uses aggregated queries to identify smaller time intervals with a manageable number of steps, then fetches raw samples only from those intervals.
 
-See [api/README.md](api/README.md) for setup instructions and [api/SCHEMA.md](api/SCHEMA.md) for detailed API documentation.
+The algorithm targets intervals with **≤10,000 steps** (configurable in `LayeringServiceImplementation`). While not perfectly balanced, the approach is effective—occasionally some intervals may exceed the limit by a small percentage, but this is acceptable given the efficiency gains.
 
-## What to Expect
+Once intervals are discovered, raw step samples are fetched from each interval and sent to the API server in batches. This strategy handles large historical datasets efficiently without overwhelming the device or the API.
 
-When you run the app, you'll see:
-1. A "Chunk" button to start the layering algorithm
-2. Processing time display showing how long layering takes
-3. Count of discovered intervals (chunks) with ≤10,000 steps each
-4. Intervals are stored to SwiftData for future use
+## Testing
 
-The app currently demonstrates the layering discovery algorithm. Raw sample fetching and API sync are planned for future implementation.
+Basic layering tests exist in `ios/HealthStepsSyncTests/` - verify interval continuity (no gaps/overlaps). Chunk step count validation is not included, as occasional overages (>10K steps) are expected given the current algorithm's approach.
 
-## Assumptions & Limitations
+Easy to add: unit tests for fetch and sync services (protocols already abstracted for mocking).
 
-### Assumptions
+## Observations
 
-1. **Single user** - No authentication required
-2. **Trusted network** - API runs locally, no HTTPS
-3. **Step data only** - Not syncing other HealthKit types
-4. **UTC timestamps** - All dates in ISO 8601 format
-5. **HealthKit UUID stability** - UUIDs don't change for existing samples
+### SwiftData Performance
+
+Calling `modelContext.save()` after each update causes UI slowdown and glitches. Using SwiftData's autosave with batching is more efficient for large-scale syncs.
+
+### Layering Algorithm Complexity
+
+The layering algorithm for discovering date intervals is not perfectly balanced. The task turned out more complex than initially expected, particularly in handling edge cases and optimizing query performance. However, the approach is effective and demonstrates the core concept of efficiently chunking large historical datasets.
+
+## Assumptions & Scope Limitations
+
+### Key Scope Limitations
+
+1. **Single user / No authentication** - The app and API run without user authentication. Adding "Sign in with Apple" would be straightforward on the server side, but requires proper Apple Developer Program setup on the iOS side (outside current scope due to time constraints).
+
+2. **Local network only** - API runs on localhost without HTTPS/TLS. This is fine for development/testing but not for production.
+
+3. **Memory optimization** - The app handles large data volumes efficiently with parallel API calls and optimized batch processing. Memory issues discovered during development have been fixed.
+
+4. **Initial full sync only** - First sync fetches all available history; incremental/delta sync (detecting new data since last sync) is not implemented.
 
 ### HealthKit Data Source
 
-**Currently using MOCK data** - The app is configured to use generated mock HealthKit data by default.
+**Testing on Simulator**: The app includes debug functions to populate the simulator with realistic test data. Run `addRealisticStepDataForPast10Years()` to generate 10 years of step history directly in the simulator's HealthKit store. See `HealthKitStepStatisticsQuery.swift` for debug helper methods.
 
-**Why?** Testing with real HealthKit data on a physical device requires:
-- Paid Apple Developer Program membership (~$99/year)
-- Proper HealthKit entitlements provisioning
-- Physical iOS device (Simulator has HealthKit API limitations)
+**Testing on Physical Device**: Requires Apple Developer Program membership (~$99/year) for proper HealthKit entitlements provisioning.
 
-**Mock data characteristics:**
-- 2+ years of step count history
-- 50-200 samples per day with realistic variation
-- 3,000-30,000 daily steps
-- Tests the complete sync pipeline without real Health data
-- No permission prompts (permissions are auto-approved in mock mode)
+**Mock Data Mode**: An alternative testing mode that generates synthetic step data without accessing HealthKit (useful for development without any device setup).
 
-**To use real HealthKit data:**
-If you have an Apple Developer Program account, switch to real data by changing line 47 in `ios/HealthStepsSync/App/HealthStepsSyncApp.swift`:
+To switch data sources, modify `ios/HealthStepsSync/App/HealthStepsSyncApp.swift`:
 ```swift
-@Entry var healthKitManager: HealthKitManager = .live()  // Change from .mock()
+@Entry var healthKitManager: HealthKitManager = .live()
 ```
 
-### Out of Scope
+## Future Improvements
 
-- Background sync / push notifications
-- Real-time streaming updates
-- User authentication
-- Data encryption
-- Production error handling
-- Incremental sync (detecting new data since last sync)
+These features would enhance the app but are not currently implemented:
+
+- **Background sync** - Sync step data automatically when the app is closed or in the background. Would require background task framework and push notifications to notify users of sync completion.
+
+- **Real-time streaming updates** - Currently syncs periodically, but updates should be more user-friendly. Could use live progress indicators, live activities (lock screen/Dynamic Island), or notification-based feedback as data arrives.
+
+- **Data encryption** - Since step count data is considered health information, it should be encrypted in transit (HTTPS) and optionally at rest on both client and server. Currently unencrypted for local development.
+
+- **Incremental sync** - Detect and sync only new step data added since the last sync, rather than re-syncing the entire history each time. This is the natural next step for improving efficiency.
+
+- **Duplicate and conflict handling** - Currently the server appends all received samples. Should implement logic to detect duplicate samples (same source, same timestamp, same step count) and handle conflicts when the same interval is synced multiple times. Server-side deduplication would be the simplest approach.
 
 ## Troubleshooting
 
-**No data showing after tapping "Chunk"**: The app uses mock data by default. Check Xcode console for errors.
+**API connection issues**:
+- Ensure API server is running on localhost:8000
+- Check app logs in Xcode console for connection errors
+- Verify firewall isn't blocking port 8000
 
-**HealthKit permissions**: Only needed when using `.live()` mode (not the default mock). Go to Settings > Privacy > Health and enable step data access. Note: Live mode also requires Apple Developer Program membership for proper provisioning.
+## Planning & Architecture
+
+Detailed planning documents are in the `Planning/` folder:
+
+- **[01-project-architecture.md](Planning/01-project-architecture.md)** - Overall system design and data flow
+- **[02-healthkit-service.md](Planning/02-healthkit-service.md)** - HealthKit integration architecture
+- **[03-layering-algorithm.md](Planning/03-layering-algorithm.md)** - Layering algorithm specification
+- **[04-layering-implementation.md](Planning/04-layering-implementation.md)** - Implementation notes and verification
+- **[04-layering-implementation-summary.md](Planning/04-layering-implementation-summary.md)** - Summary of completed tasks
+- **[05-sync-service.md](Planning/05-sync-service.md)** - API sync service design
 
 ## AI Disclosure
 
-This project was developed with AI assistance (Claude) for planning and code generation.
+This project was developed with AI assistance (Claude) for planning, architecture design, and code generation.
