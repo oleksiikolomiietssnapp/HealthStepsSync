@@ -91,12 +91,17 @@ The app automatically uses `localhost` for simulator builds and your Mac's IP fo
 
 ## Demo Video
 
-[Add your demo video here - 30-60 second video showing:
-- App startup and HealthKit permission grant
-- Sync progress in real-time (demonstrating the layering algorithm's efficiency)
-- Step count data updates across multiple intervals
-- Navigation to review stored and synced data
-- Verification in api/data/steps.jsonl]
+[Demo video - showing complete workflow]
+
+The demo shows:
+1. **Install & Setup** - Launch app, accept HealthKit sharing permissions
+2. **Generate Test Data** - Add 10 years of realistic step history to simulator
+3. **Layering Stage** (~2 seconds) - Discover all date intervals with step data
+4. **Review Chunks** - Display stored `SyncInterval` records with sync status
+5. **Sync Stage** (~5-6 seconds total) - Send raw step samples to API
+6. **Pause & Resume** - Pause sync mid-process, close app, relaunch to verify state is preserved
+7. **Resume Sync** - Continue syncing remaining intervals from paused state
+8. **Final Verification** - Check synced data in app UI and `api/data/steps.jsonl`
 
 ## Architecture
 
