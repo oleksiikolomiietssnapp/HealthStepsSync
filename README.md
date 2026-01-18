@@ -70,17 +70,117 @@ See [api/README.md](api/README.md) for detailed setup and [api/SCHEMA.md](api/SC
 7. Use the nav bar button to review stored and synced data
 8. Check `api/data/steps.jsonl` to verify persisted data
 
+#### Testing on Physical Device (Same WiFi)
+
+For physical device testing, update the Mac IP address in the endpoint configuration:
+
+**File**: `ios/HealthStepsSync/Services/Network/Endpoint.swift` (line 24)
+
+```swift
+#else
+    static var baseURL: String = "http://192.168.0.200:8000"  // Update to your Mac's IP
+#endif
+```
+
+Find your Mac's IP:
+```bash
+ifconfig | grep -E "inet " | grep -v 127.0.0.1
+```
+
+The app automatically uses `localhost` for simulator builds and your Mac's IP for physical device builds.
+
+## Demo Video
+
+[Add your demo video here - 30-60 second video showing:
+- App startup and HealthKit permission grant
+- Sync progress in real-time (demonstrating the layering algorithm's efficiency)
+- Step count data updates across multiple intervals
+- Navigation to review stored and synced data
+- Verification in api/data/steps.jsonl]
+
+## Architecture
+
+The app follows a layered architecture with clear separation of concerns:
+
+**Services** (business logic):
+- `LayeringServiceImplementation` - discovers date intervals with step data
+- `SyncServiceImplementation` - syncs individual intervals to the API
+- `HealthKitStepDataSource` - HealthKit queries (aggregated buckets and raw samples)
+- `NetworkService` (URLSessionNetworkService) - HTTP requests to the API
+- `LocalStorageProvider` (SwiftDataStorageProvider) - persists interval state
+
+**View Models**:
+- `ContentViewModel` - orchestrates layering and sync workflows, manages UI state, handles concurrency (TaskGroup)
+- `SyncedStepsViewModel` - fetches and displays synced data from the server
+
+**Navigation**:
+- `NavigationStack` for root navigation structure
+- `NavigationLink` for navigating to detail views (Stored Chunks, Synced Steps)
+- Each module (Main, StoredChunks, SyncedSteps, Admin) is self-contained
+
+**Dependency Injection**:
+- `@Entry` (Swift 6.2) in `EnvironmentValues+Entries.swift` provides:
+  - `healthKitDataSource: HealthKitStepDataSource = .live()`
+  - `networkService: NetworkService = .live`
+- Services are initialized in `HealthStepsSyncApp` and passed to views
+- Enables easy testing by swapping implementations
+
 ## Implementation Strategy
 
+### Layering Algorithm
 The app uses a **layering algorithm** to efficiently discover date intervals containing step data. Instead of querying all raw samples at once (which could be millions of data points over 10 years), the algorithm uses aggregated queries to identify smaller time intervals with a manageable number of steps, then fetches raw samples only from those intervals.
 
-The algorithm targets intervals with **≤10,000 steps** (configurable in `LayeringServiceImplementation`). While not perfectly balanced, the approach is effective—occasionally some intervals may exceed the limit by a small percentage, but this is acceptable given the efficiency gains.
+The algorithm targets intervals with **≤10,000 steps** (configurable in `LayeringServiceImplementation`). It produces well-balanced chunks while delivering fast sync performance.
 
-Once intervals are discovered, raw step samples are fetched from each interval and sent to the API server in batches. This strategy handles large historical datasets efficiently without overwhelming the device or the API.
+### Syncing & Batching
+
+Once intervals are discovered, `SyncServiceImplementation` handles each interval as follows:
+
+**Per Interval** (single `sync()` call):
+1. **Fetch raw samples**: `getRawStepSamples()` retrieves all individual step samples from HealthKit for that interval
+2. **Convert to API format**: Raw samples are transformed into `APIStepSample` objects (UUID, start/end dates in ISO 8601, step count, source device)
+3. **Send to server**: All samples from the interval are wrapped in a `PostStepsRequest` and sent in a single POST request to `/steps`
+4. **Mark as synced**: After successful API response, the interval's `syncedToServer` flag is updated in storage
+
+**Concurrency**:
+- Up to 3 intervals sync in parallel (configurable via `maxConcurrentSyncs` in ContentViewModel)
+- Uses `TaskGroup` with an iterator pattern: as each interval completes, the next one starts
+- Maintains responsive UI and efficient resource use without overwhelming the network
+
+Example of a single step sample stored in `api/data/steps.jsonl`:
+```json
+{"sourceDeviceName": "iPhone", "uuid": "D67311EE-FACB-41AA-B202-8D266F3EDE18", "startDate": "2025-05-11T16:27:22.000Z", "endDate": "2025-05-11T16:29:03.000Z", "count": 6176, "sourceBundleId": "com.kolomiiets.HealthStepsSync"}
+```
+
+### Review Data
+
+The app provides two screens to review progress:
+
+**Stored Chunks** (local SwiftData):
+- Displays all `SyncInterval` records discovered and stored locally
+- Shows: date range, step count, and sync status for each chunk
+- Includes trash button to delete all local chunks and clear server data via DELETE `/steps`
+
+**Synced Steps** (server data):
+- Fetches and displays all raw step samples successfully synced to the server (via GET `/steps`)
+- Shows: start/end dates, step count, source device for each sample
+- Refresh button to reload data from server
+- Helpful for verifying data persistence and checking server state
+
+### Pause & Resume
+The sync operation supports pause/resume:
+- **Pause**: Cancels in-flight requests; current interval sync is aborted
+- **Resume**: Continues with remaining unsynchronized intervals (previous ones are marked as synced)
+- **State tracking**: Each interval tracks sync status in local SwiftData storage
+
+### Network Failure Handling
+- Network errors propagate to the UI as sync failures
+- User can retry manually by tapping the sync button again
+- **Note**: There is no automatic retry logic or crash recovery—in-flight requests are lost if the app terminates
 
 ## Testing
 
-Basic layering tests exist in `ios/HealthStepsSyncTests/` - verify interval continuity (no gaps/overlaps). Chunk step count validation is not included, as occasional overages (>10K steps) are expected given the current algorithm's approach.
+Basic layering tests exist in `ios/HealthStepsSyncTests/` - verify interval continuity (no gaps/overlaps) and chunk balance.
 
 Easy to add: unit tests for fetch and sync services (protocols already abstracted for mocking).
 
@@ -90,9 +190,9 @@ Easy to add: unit tests for fetch and sync services (protocols already abstracte
 
 Calling `modelContext.save()` after each update causes UI slowdown and glitches. Using SwiftData's autosave with batching is more efficient for large-scale syncs.
 
-### Layering Algorithm Complexity
+### Layering Algorithm
 
-The layering algorithm for discovering date intervals is not perfectly balanced. The task turned out more complex than initially expected, particularly in handling edge cases and optimizing query performance. However, the approach is effective and demonstrates the core concept of efficiently chunking large historical datasets.
+The layering algorithm efficiently discovers date intervals by balancing query performance with chunk size constraints. It handles large historical datasets effectively through aggregated queries and intelligent interval subdivision.
 
 ## Assumptions & Scope Limitations
 
@@ -100,24 +200,50 @@ The layering algorithm for discovering date intervals is not perfectly balanced.
 
 1. **Single user / No authentication** - The app and API run without user authentication. Adding "Sign in with Apple" would be straightforward on the server side, but requires proper Apple Developer Program setup on the iOS side (outside current scope due to time constraints).
 
-2. **Local network only** - API runs on localhost without HTTPS/TLS. This is fine for development/testing but not for production.
+2. **Local network only** - API runs on localhost without HTTPS/TLS. For physical device testing on the same WiFi, update `Endpoint.swift` line 24 with your Mac's IP (see "Testing on Physical Device" above). Not suitable for production.
 
 3. **Memory optimization** - The app handles large data volumes efficiently with parallel API calls and optimized batch processing. Memory issues discovered during development have been fixed.
 
 4. **Initial full sync only** - First sync fetches all available history; incremental/delta sync (detecting new data since last sync) is not implemented.
 
+5. **No automatic retry or crash recovery** - Network failures surface to the UI; user can retry manually. If app crashes mid-sync, in-flight requests are lost.
+
+6. **No deduplication** - API appends all samples without checking for duplicates. Syncing the same interval multiple times will store duplicate samples.
+
 ### HealthKit Data Source
+
+The app uses `HealthKitStepDataSource` to interact with HealthKit through the `StepDataSource` protocol:
+
+**Layering Stage** (discovering intervals):
+- Uses `fetchStepBuckets()` - performs aggregated queries with `HKStatisticsCollectionQuery`
+- Returns bucketed step counts (e.g., 15-minute intervals) to identify dense date ranges
+- Efficient for scanning large historical periods without fetching individual samples
+
+**Sync Stage** (fetching raw samples):
+- Uses `getRawStepSamples()` - performs raw sample queries with `HKSampleQuery`
+- Returns individual step samples from pre-identified intervals
+- Fetches only from intervals discovered during layering (avoids querying all 10 years of raw data at once)
 
 **Testing on Simulator**: The app includes debug functions to populate the simulator with realistic test data. Run `addRealisticStepDataForPast10Years()` to generate 10 years of step history directly in the simulator's HealthKit store. See `HealthKitStepStatisticsQuery.swift` for debug helper methods.
 
-**Testing on Physical Device**: Requires Apple Developer Program membership (~$99/year) for proper HealthKit entitlements provisioning.
+**Testing on Physical Device**: Requires Apple Developer Program membership for proper HealthKit entitlements provisioning.
 
-**Mock Data Mode**: An alternative testing mode that generates synthetic step data without accessing HealthKit (useful for development without any device setup).
+### Storage & State Tracking
 
-To switch data sources, modify `ios/HealthStepsSync/App/HealthStepsSyncApp.swift`:
-```swift
-@Entry var healthKitManager: HealthKitManager = .live()
-```
+The app uses SwiftData to persist `SyncInterval` records locally, tracking which date intervals have been synced to the server:
+
+**Layering Phase** (Stage 1):
+- `LocalStorageProvider.insertInterval()` creates new `SyncInterval` records with `syncedToServer = false`
+- Each interval stores: start date, end date, step count, and sync status
+- After all intervals are discovered, they're persisted to SwiftData
+
+**Sync Phase** (Stage 2):
+- `LocalStorageProvider.updateSyncedToServer()` marks intervals as `syncedToServer = true` after their raw step samples are successfully sent to the API
+- Updates are batched for efficiency: flushes after 42 synced intervals, plus a delayed flush with 1-second timeout
+- Uses background context to avoid blocking the main thread during bulk updates
+- Resume functionality: only remaining unsynchronized intervals are re-fetched on app restart
+
+This two-phase approach allows the app to discover all intervals first, then progressively sync them without re-querying HealthKit for already-discovered data.
 
 ## Future Improvements
 
