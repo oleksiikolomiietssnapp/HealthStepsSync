@@ -63,6 +63,7 @@ struct SyncedStepsView: View {
                 }
             }
         }
+        .navigationTitle("\(viewModel.steps.count) records")
         .navigationTitle("Synced Steps")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

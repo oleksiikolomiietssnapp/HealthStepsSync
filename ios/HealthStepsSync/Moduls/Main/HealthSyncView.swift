@@ -9,27 +9,30 @@ import SwiftData
 import SwiftUI
 
 struct HealthSyncView: View {
+    @Environment(\.networkService) var networkService
     @Query(sort: \SyncInterval.startDate) var intervals: [SyncInterval]
     let state: HealthSyncState
     var action: () -> Void
+    @State private var syncedRecords: Int?
 
     var body: some View {
-        VStack {
-            stepsCardView
-                .padding()
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(radius: 2)
+        List {
+            VStack(spacing: 30) {
+                stepsCardView
+                    .padding()
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(radius: 2)
 
-            VStack(spacing: 12) {
                 actionButton
-                    .frame(maxWidth: .infinity)
 
                 statusView
-                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.top, 8)
+            .listRowSeparator(.hidden)
+            .animation(.default, value: state)
         }
-        .padding()
+        .listStyle(.plain)
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     @ViewBuilder
@@ -40,6 +43,7 @@ struct HealthSyncView: View {
                 .scaledToFit()
                 .frame(width: 80, height: 80)
                 .foregroundStyle(.tint)
+                .padding(.vertical)
 
             VStack(alignment: .leading, spacing: 8) {
                 // Total steps
@@ -73,54 +77,71 @@ struct HealthSyncView: View {
                 }
             }
             .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     @ViewBuilder
     private var statusView: some View {
-        switch state {
-        case .idle:
-            Label("Ready to sync health data", systemImage: "figure.walk")
-                .foregroundStyle(.secondary)
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 20) {
+            switch state {
+            case .idle:
+                Label("Ready to sync health data", systemImage: "figure.walk")
+                    .foregroundStyle(.secondary)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .center)
 
-        case .layering:
-            ProgressView("Layering may take few minutes...")
-                .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+            case .layering:
+                ProgressView("Layering may take few minutes...")
+                    .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                    .frame(maxWidth: .infinity, alignment: .center)
 
-        case .readyToSync:
-            Label("Chunks ready to sync", systemImage: "square.stack.3d.up")
-                .font(.headline)
-                .foregroundStyle(Color.accentColor)
+            case .readyToSync:
+                Label("\(intervals.count) Chunks ready to sync", systemImage: "square.stack.3d.up")
+                    .foregroundStyle(Color.accentColor)
+                    .font(.headline)
 
-        case .syncing(let progress):
-            VStack(spacing: 8) {
+            case .syncing(let progress):
                 ProgressView(value: Double(progress.synced), total: Double(progress.total))
                     .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                    .padding(.horizontal)
                 Text("\(progress.synced) of \(progress.total) synced")
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
-            }
-            .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity, alignment: .center)
 
-        case .paused(let progress):
-            VStack(spacing: 4) {
+            case .paused(let progress):
+                ProgressView(value: Double(progress.synced), total: Double(progress.total))
+                    .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                    .padding(.horizontal)
                 Label("Paused", systemImage: "pause.circle.fill")
                     .foregroundStyle(.yellow)
-                Text("\(progress.synced) of \(progress.total) synced")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+            case .completed:
+                Label("Sync complete:", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Label("\(intervals.count) chunks", systemImage: "square.stack.3d.up")
+                    .task {
+                        do {
+                            let stored: GetStepsResponse = try await networkService.get(.getSteps)
+                            syncedRecords = stored.total
+                        } catch {
+
+                        }
+                    }
+                if let syncedRecords {
+                    Label("\(syncedRecords) raw step records", systemImage: "square.stack.3d.up.fill")
+                        .padding(.leading, 2)
+                } else {
+                    ProgressView()
+                }
+
+            case .failed(let error):
+                Label(errorMessage(for: error), systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .font(.headline)
             }
-
-        case .completed:
-            Label("Sync complete", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .font(.headline)
-
-        case .failed(let error):
-            Label(errorMessage(for: error), systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
-                .font(.headline)
         }
     }
 
@@ -132,7 +153,6 @@ struct HealthSyncView: View {
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
-        .padding(.horizontal)
         .disabled(!canPerformAction)
     }
 

@@ -12,6 +12,6 @@ protocol StepStatisticsQuerying {
     var authorizationStatus: HealthKitAuthStatus { get }
 
     func requestAuthorization() async throws
-    func fetchAggregatedStepCount(for interval: DateInterval) async throws -> AggregatedStepData
+    func fetchStepBuckets(from startDate: Date, to endDate: Date, bucketMinutes: Int) async throws -> [StepBucket]
     func fetchStepSamples(for interval: DateInterval) async throws -> [StepSampleData]
 }

@@ -18,7 +18,11 @@ extension EndpointProvider where Self == LocalEndpoint {
 /// API endpoints for health step sync
 enum LocalEndpoint: EndpointProvider {
     struct Constants {
-        static var baseURL: String = "http://127.0.0.1:8000"
+        #if DEBUG
+            static var baseURL: String = "http://127.0.0.1:8000"  // Simulator
+        #else
+            static var baseURL: String = "http://192.168.0.200:8000"  // Physical device - update IP as needed
+        #endif
     }
 
     case _health

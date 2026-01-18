@@ -10,6 +10,7 @@ import SwiftUI
 
 struct StoredChunksView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.networkService) private var networkService
 
     @Query(sort: \SyncInterval.startDate)
     var chunks: [SyncInterval]
@@ -24,6 +25,7 @@ struct StoredChunksView: View {
                 }
             }
         }
+        .navigationTitle("\(chunks.count) records")
         .navigationTitle("Stored Chunks")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -39,6 +41,9 @@ struct StoredChunksView: View {
 
     private func removeAllChunks() {
         try? modelContext.delete(model: SyncInterval.self)
+        Task {
+            try? await networkService.delete(.deleteSteps)
+        }
     }
 }
 

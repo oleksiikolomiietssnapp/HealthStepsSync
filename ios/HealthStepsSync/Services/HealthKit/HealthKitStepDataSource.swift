@@ -30,21 +30,13 @@ final class HealthKitStepDataSource<T: StepStatisticsQuerying>: StepDataSource {
     }
 
     // MARK: - Aggregated Query (Stage 1 - Layering)
-
-    /// Get aggregated step count for a date interval
-    /// Returns total steps in the interval, used to decide if we need to subdivide
-    /// - Parameter interval: The time interval to query
-    /// - Returns: Total step count in the interval
-    func getAggregatedStepData(for interval: DateInterval) async throws -> AggregatedStepData {
-        if let result = try? await stepQuery.fetchAggregatedStepCount(for: interval) {
-            return result
-        } else {
-            return AggregatedStepData(
-                count: 0,
-                startDate: interval.start,
-                endDate: interval.end
-            )
-        }
+    
+    func fetchStepBuckets(
+        from startDate: Date,
+        to endDate: Date,
+        bucketMinutes: Int
+    ) async throws -> [StepBucket] {
+        try await stepQuery.fetchStepBuckets(from: startDate, to: endDate, bucketMinutes: bucketMinutes)
     }
 
     // MARK: - Raw Sample Query (Stage 2a - Fetching)

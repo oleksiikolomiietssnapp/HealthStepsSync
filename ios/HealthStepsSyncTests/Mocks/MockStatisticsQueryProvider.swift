@@ -41,6 +41,10 @@ class MockStatisticsQueryProvider: StepStatisticsQuerying {
         AggregatedStepData(count: generateMockStepCount(for: interval), startDate: interval.start, endDate: interval.end)
     }
 
+    func fetchStepBuckets(from startDate: Date, to endDate: Date, bucketMinutes: Int) async throws -> [StepBucket] {
+        []
+    }
+
     func fetchStepSamples(for interval: DateInterval) async throws -> [StepSampleData] {
         generateMockStepSamples(for: interval)
     }

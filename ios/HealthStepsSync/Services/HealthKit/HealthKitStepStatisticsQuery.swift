@@ -18,7 +18,12 @@ final class HealthKitStepStatisticsQuery: StepStatisticsQuerying {
         HKHealthStore.isHealthDataAvailable()
     }
 
-    private var stepType: HKQuantityType { HKQuantityType(.stepCount) }
+    private var stepType: HKQuantityType {
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            fatalError("StepCount HKQuantityType is missing")
+        }
+        return stepType
+    }
 
     var authorizationStatus: HealthKitAuthStatus {
         guard isAvailable else {
@@ -36,12 +41,7 @@ final class HealthKitStepStatisticsQuery: StepStatisticsQuerying {
         case .sharingAuthorized:
             return .authorized
         case .sharingDenied:
-            #if DEBUG
-                // simulator bug - when authorized to return sharingDenied
-                return .authorized
-            #else
-                return .denied
-            #endif
+            return .denied
         @unknown default:
             return .notDetermined
         }
@@ -115,23 +115,69 @@ final class HealthKitStepStatisticsQuery: StepStatisticsQuerying {
         }
     }
 
+    func fetchStepBuckets(
+        from startDate: Date,
+        to endDate: Date,
+        bucketMinutes: Int
+    ) async throws -> [StepBucket] {
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
+        let anchor = Calendar.current.startOfDay(for: startDate)
+        let interval = DateComponents(minute: bucketMinutes)
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let query = HKStatisticsCollectionQuery(
+                quantityType: stepType,
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum,
+                anchorDate: anchor,
+                intervalComponents: interval
+            )
+
+            query.initialResultsHandler = { _, collection, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                guard let collection else {
+                    continuation.resume(returning: [])
+                    return
+                }
+
+                var buckets: [StepBucket] = []
+                collection.enumerateStatistics(from: startDate, to: endDate) { stats, _ in
+                    let steps = stats.sumQuantity()?.doubleValue(for: .count()).rounded() ?? 0
+                    buckets.append(StepBucket(start: stats.startDate, end: stats.endDate, steps: Int(steps)))
+                }
+
+                continuation.resume(returning: buckets)
+            }
+
+            healthStore.execute(query)
+        }
+    }
+
     func fetchStepSamples(for interval: DateInterval) async throws -> [StepSampleData] {
         let predicate = HKQuery.predicateForSamples(
             withStart: interval.start,
             end: interval.end,
             options: .strictStartDate
         )
-        return try await withCheckedThrowingContinuation { continuation in
+        return try await withCheckedThrowingContinuation {  [weak self] continuation in
+            guard let self else {
+                continuation.resume(returning: [])
+                return
+            }
+            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
             let query = HKSampleQuery(
-                sampleType: stepType,
+                sampleType: self.stepType,
                 predicate: predicate,
                 limit: HKObjectQueryNoLimit,
-                sortDescriptors: nil
+                sortDescriptors: [sortDescriptor]
             ) { _, results, error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
-                    continuation.resume(returning: results as? [HKQuantitySample] ?? [])
+                    continuation.resume(returning: results as? [StepSampleData] ?? [])
                 }
             }
             healthStore.execute(query)
@@ -182,13 +228,15 @@ final class HealthKitStepStatisticsQuery: StepStatisticsQuerying {
                     samplesToSave.append(contentsOf: dailySamples)
                 }
 
-                // Save each month separately
-                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                    self.healthStore.save(samplesToSave) { success, error in
-                        if let error {
-                            continuation.resume(throwing: HealthKitError.queryFailed(underlying: error))
-                        } else {
-                            continuation.resume()
+                // Save each month separately (skip if empty)
+                if !samplesToSave.isEmpty {
+                    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                        self.healthStore.save(samplesToSave) { success, error in
+                            if let error {
+                                continuation.resume(throwing: HealthKitError.queryFailed(underlying: error))
+                            } else {
+                                continuation.resume()
+                            }
                         }
                     }
                 }
@@ -229,18 +277,20 @@ final class HealthKitStepStatisticsQuery: StepStatisticsQuerying {
                             samplesToSave.append(contentsOf: dailySamples)
                         }
 
-                        // Save weekly batch
-                        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                            self.healthStore.save(samplesToSave) { success, error in
-                                if let error {
-                                    continuation.resume(throwing: HealthKitError.queryFailed(underlying: error))
-                                } else {
-                                    continuation.resume()
+                        // Save weekly batch (skip if empty)
+                        if !samplesToSave.isEmpty {
+                            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                                self.healthStore.save(samplesToSave) { success, error in
+                                    if let error {
+                                        continuation.resume(throwing: HealthKitError.queryFailed(underlying: error))
+                                    } else {
+                                        continuation.resume()
+                                    }
                                 }
                             }
-                        }
 
-                        try await Task.sleep(nanoseconds: 50_000_000)  // 0.05s delay
+                            try await Task.sleep(nanoseconds: 50_000_000)  // 0.05s delay
+                        }
                     }
 
                     currentDate = Calendar.current.date(byAdding: .day, value: recordingDuration, to: currentDate) ?? endDate
@@ -279,6 +329,10 @@ final class HealthKitStepStatisticsQuery: StepStatisticsQuerying {
 
                 let dailySamples = generateRealisticDaySamples(for: dayStart, stepType: stepType)
                 samplesToSave.append(contentsOf: dailySamples)
+            }
+
+            guard !samplesToSave.isEmpty else {
+                return
             }
 
             return try await withCheckedThrowingContinuation { continuation in

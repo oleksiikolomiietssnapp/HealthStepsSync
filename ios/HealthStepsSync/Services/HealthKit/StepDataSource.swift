@@ -17,9 +17,7 @@ protocol StepDataSource {
     /// Request authorization to read step count data
     func requestAuthorization() async throws
 
-    /// Get aggregated step count for a date interval (Stage 1 - Layering)
-    /// Returns total steps in the interval, used to decide if we need to subdivide
-    func getAggregatedStepData(for interval: DateInterval) async throws -> AggregatedStepData
+    func fetchStepBuckets(from startDate: Date, to endDate: Date, bucketMinutes: Int) async throws -> [StepBucket]
 
     /// Get raw step samples for a date interval (Stage 2a - Fetching)
     /// Returns array of individual step sample data

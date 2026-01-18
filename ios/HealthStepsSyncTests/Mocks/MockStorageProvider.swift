@@ -9,19 +9,19 @@ import OSLog
 import Foundation
 
 class MockStorageProvider: LocalStorageProvider {
+    func insertInterval(startDate: Date, endDate: Date, stepCount: Int) async throws {
+        os_log(.debug, "%i %@",
+            stepCount,
+            DateComponentsFormatter.duration.string(
+                from: startDate, to: endDate
+            ) ?? "-"
+        )
+    }
+
     func updateSyncedToServer(_ id: UUID) throws {
         os_log(.debug, "Synced %@", id.uuidString)
     }
 
-    func insertInterval(_ interval: HealthStepsSync.SyncInterval) {
-        os_log(.debug, "%i %@",
-            interval.stepCount,
-            DateComponentsFormatter.duration.string(
-                from: interval.startDate,
-                to: interval.endDate
-            ) ?? "-"
-        )
-    }
 
     func deleteIntervals() throws {
 

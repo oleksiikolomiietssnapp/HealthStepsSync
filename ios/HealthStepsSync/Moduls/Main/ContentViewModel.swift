@@ -103,32 +103,8 @@ final class ContentViewModel {
             do {
                 try await self.syncChunks(chunks, totalCount: total)
                 self.state = .completed
-            } catch is CancellationError {
-                // Paused by user
             } catch {
-                self.state = .failed(
-                    .syncFailed(
-                        reason: error.localizedDescription,
-                        canRetry: true
-                    )
-                )
-            }
-        }
-    }
-
-    private func syncChunksInBackground(_ chunks: [SyncInterval], totalCount: Int) async throws {
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            for chunk in chunks {
-                try Task.checkCancellation()
-
-                group.addTask {
-                    try await self.apiSyncService.sync(
-                        id: chunk.id,
-                        startDate: chunk.startDate,
-                        endDate: chunk.endDate
-                    )
-                }
-                try await group.next()
+                os_log("%@", error.localizedDescription)
             }
         }
     }
@@ -145,15 +121,8 @@ final class ContentViewModel {
                 try Task.checkCancellation()
                 try await self.syncChunks(chunks, totalCount: total)
                 self.state = .completed
-            } catch is CancellationError {
-                // Paused again
             } catch {
-                self.state = .failed(
-                    .syncFailed(
-                        reason: error.localizedDescription,
-                        canRetry: true
-                    )
-                )
+                os_log("%@", error.localizedDescription)
             }
         }
     }
