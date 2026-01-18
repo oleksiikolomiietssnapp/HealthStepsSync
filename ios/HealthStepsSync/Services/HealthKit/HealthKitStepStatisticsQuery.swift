@@ -242,7 +242,7 @@ final class HealthKitStepStatisticsQuery: StepStatisticsQuerying {
                 }
 
                 // Small delay between months to avoid rate limiting
-                try await Task.sleep(nanoseconds: 100_000_000)  // 0.1 seconds
+                try await Task.sleep(nanoseconds: 10_000_000)
             }
         }
 
@@ -289,7 +289,7 @@ final class HealthKitStepStatisticsQuery: StepStatisticsQuerying {
                                 }
                             }
 
-                            try await Task.sleep(nanoseconds: 50_000_000)  // 0.05s delay
+                            try await Task.sleep(nanoseconds: 10_000_000)
                         }
                     }
 
