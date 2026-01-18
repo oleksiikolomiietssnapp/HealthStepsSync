@@ -34,7 +34,6 @@ ios-health-steps-sync/
     └── data/
         └── steps.jsonl
 ```
-
 ---
 
 ## Component Breakdown
