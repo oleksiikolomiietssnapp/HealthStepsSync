@@ -13,9 +13,28 @@ file_lock = threading.Lock()
 # Data directory and file paths
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 JSONL_FILE = os.path.join(DATA_DIR, 'steps.jsonl')
+METADATA_FILE = os.path.join(DATA_DIR, 'metadata.json')
 
 # Ensure data directory exists
 os.makedirs(DATA_DIR, exist_ok=True)
+
+
+def get_stored_count():
+    """Get stored count from metadata file"""
+    try:
+        if os.path.exists(METADATA_FILE):
+            with open(METADATA_FILE, 'r') as f:
+                data = json.load(f)
+                return data.get('count', 0)
+    except:
+        pass
+    return 0
+
+
+def set_stored_count(count):
+    """Save stored count to metadata file"""
+    with open(METADATA_FILE, 'w') as f:
+        json.dump({'count': count}, f)
 
 
 @app.route('/steps', methods=['POST'])
@@ -41,6 +60,10 @@ def save_steps():
                     # Write as single line JSON
                     f.write(json.dumps(sample) + '\n')
 
+            # Update stored count
+            current_count = get_stored_count()
+            set_stored_count(current_count + len(samples))
+
         return jsonify({'saved': len(samples), 'message': 'Success'}), 200
 
     except json.JSONDecodeError:
@@ -50,25 +73,11 @@ def save_steps():
 
 
 @app.route('/steps', methods=['GET'])
-def get_steps():
-    """Retrieve all stored step samples"""
+def count_steps():
+    """Retrieve total count of stored step samples"""
     try:
-        samples = []
-
-        # Read samples from .jsonl file with thread safety
-        with file_lock:
-            if os.path.exists(JSONL_FILE):
-                with open(JSONL_FILE, 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:  # Skip empty lines
-                            try:
-                                samples.append(json.loads(line))
-                            except json.JSONDecodeError:
-                                # Skip malformed lines
-                                continue
-
-        return jsonify({'samples': samples, 'total': len(samples)}), 200
+        stored_count = get_stored_count()
+        return jsonify({'storedCount': stored_count}), 200
 
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
@@ -81,9 +90,9 @@ def delete_all_steps():
         with file_lock:
             if os.path.exists(JSONL_FILE):
                 os.remove(JSONL_FILE)
-                return jsonify({'message': 'All steps deleted successfully'}), 200
-            else:
-                return jsonify({'message': 'No steps file to delete'}), 200
+            # Reset stored count
+            set_stored_count(0)
+            return jsonify({'message': 'All steps deleted successfully'}), 200
 
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500

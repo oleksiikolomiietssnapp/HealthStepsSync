@@ -8,9 +8,6 @@
 import Foundation
 import OSLog
 
-import Foundation
-
-@MainActor
 final class LayeringServiceImplementation: LayeringService {
 
     private(set) var maxStepsPerInterval = 10_000
@@ -28,15 +25,14 @@ final class LayeringServiceImplementation: LayeringService {
         self.storageProvider = storageProvider
     }
 
-    @discardableResult
-    func performLayering() async throws -> [SyncInterval] {
+    func performLayering() async throws {
         // 1. Clear existing intervals
         try await clearAllIntervals()
 
         // 2. Define max range
         let endDate = Date()
         guard let startDate = Calendar.current.date(byAdding: .year, value: -maxYearsBack, to: endDate) else {
-            return []
+            return
         }
 
         // 3. Fetch step buckets once
@@ -50,7 +46,7 @@ final class LayeringServiceImplementation: LayeringService {
                 stepCount: interval.stepCount
             )
             try storageProvider.save()
-            return [interval]
+            return
         }
 
         // 4. Build balanced intervals
@@ -65,8 +61,6 @@ final class LayeringServiceImplementation: LayeringService {
             )
         }
         try storageProvider.save()
-
-        return intervals
     }
 
     func clearAllIntervals() async throws {

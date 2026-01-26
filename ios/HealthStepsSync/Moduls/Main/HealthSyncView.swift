@@ -5,6 +5,7 @@
 //  Created by Oleksii Kolomiiets on 1/17/26.
 //
 
+import OSLog
 import SwiftData
 import SwiftUI
 
@@ -124,10 +125,10 @@ struct HealthSyncView: View {
                 Label("\(intervals.count) chunks", systemImage: "square.stack.3d.up")
                     .task {
                         do {
-                            let stored: GetStepsResponse = try await networkService.get(.getSteps)
-                            syncedRecords = stored.total
+                            let stored: GetStepsStoredCountResponse = try await networkService.get(.getSteps)
+                            syncedRecords = stored.storedCount
                         } catch {
-
+                            os_log(.error, "%@", error.localizedDescription)
                         }
                     }
                 if let syncedRecords {

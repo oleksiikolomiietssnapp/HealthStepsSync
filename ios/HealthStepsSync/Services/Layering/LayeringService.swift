@@ -7,11 +7,9 @@
 
 import Foundation
 
-@MainActor
 protocol LayeringService {
     /// Performs layering: discovers intervals with ≤10,000 steps each
-    @discardableResult
-    func performLayering() async throws -> [SyncInterval]
+    func performLayering() async throws
 
     /// Deletes all existing SyncInterval records (for restart)
     func clearAllIntervals() async throws

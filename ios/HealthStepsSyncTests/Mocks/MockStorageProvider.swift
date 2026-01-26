@@ -9,7 +9,14 @@ import OSLog
 import Foundation
 
 class MockStorageProvider: LocalStorageProvider {
+    var source: [UUID: SyncInterval] = [:]
     func insertInterval(startDate: Date, endDate: Date, stepCount: Int) async throws {
+        let interval = SyncInterval(
+            startDate: startDate,
+            endDate: endDate,
+            stepCount: stepCount
+        )
+        source[interval.id] = interval
         os_log(.debug, "%i %@",
             stepCount,
             DateComponentsFormatter.duration.string(
@@ -19,6 +26,7 @@ class MockStorageProvider: LocalStorageProvider {
     }
 
     func updateSyncedToServer(_ id: UUID) throws {
+        source[id]?.syncedToServer = true
         os_log(.debug, "Synced %@", id.uuidString)
     }
 

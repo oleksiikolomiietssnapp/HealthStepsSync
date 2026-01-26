@@ -21,10 +21,9 @@ struct PostResponse: Codable {
     let message: String
 }
 
-/// Response payload for GET /steps
-struct GetStepsResponse: Codable {
-    let samples: [APIStepSample]
-    let total: Int
+/// Response payload for GET /steps/storedCount
+struct GetStepsStoredCountResponse: Codable {
+    let storedCount: Int
 }
 
 /// Response payload for DELETE /steps

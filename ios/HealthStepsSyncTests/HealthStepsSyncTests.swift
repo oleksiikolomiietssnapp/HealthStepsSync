@@ -10,24 +10,27 @@ import Testing
 
 @testable import HealthStepsSync
 
+@MainActor
 @Suite("LayeringService Tests")
 struct LayeringServiceTests {
-    @Test() @MainActor
+    @Test()
     func testRegularSteps() async throws {
-        let service = LayeringServiceImplementation(stepDataSource: HealthKitStepDataSource.mock(), storageProvider: MockStorageProvider())
+        let storage = MockStorageProvider()
+        let service = LayeringServiceImplementation(stepDataSource: HealthKitStepDataSource.mock(), storageProvider: storage)
 
-        let results = try await service.performLayering()
+        try await service.performLayering()
+        let results = storage.source
 
         #expect(
             results.allSatisfy { interval in
-                interval.syncedToServer == false &&
-                interval.endDate > interval.startDate
+                interval.value.syncedToServer == false &&
+                interval.value.endDate > interval.value.startDate
             }
         )
 
         print(results.count)
-        let endDates = results.map(\.endDate).dropLast()
-        let startDates = results.map(\.startDate).dropFirst()
+        let endDates = results.map(\.value.endDate).dropLast()
+        let startDates = results.map(\.value.startDate).dropFirst()
         #expect(endDates.count == startDates.count)
 
         for (endDate, startDate) in zip(endDates, startDates) {
@@ -37,23 +40,25 @@ struct LayeringServiceTests {
 
     @Test() @MainActor
     func testRealisticSteps() async throws {
+        let storage = MockStorageProvider()
         let service = LayeringServiceImplementation(
             stepDataSource: HealthKitStepDataSource.realisticMock(),
-            storageProvider: MockStorageProvider()
+            storageProvider: storage
         )
 
-        let results = try await service.performLayering()
+        try await service.performLayering()
+        let results = storage.source
 
         print(results.count)
         #expect(
             results.allSatisfy { interval in
-                interval.syncedToServer == false &&
-                interval.endDate > interval.startDate
+                interval.value.syncedToServer == false &&
+                interval.value.endDate > interval.value.startDate
             }
         )
 
-        let endDates = results.map(\.endDate).dropLast()
-        let startDates = results.map(\.startDate).dropFirst()
+        let endDates = results.map(\.value.endDate).dropLast()
+        let startDates = results.map(\.value.startDate).dropFirst()
         #expect(endDates.count == startDates.count)
 
         for (endDate, startDate) in zip(endDates, startDates) {
@@ -63,23 +68,25 @@ struct LayeringServiceTests {
 
     @Test() @MainActor
     func testWorstCaseSteps() async throws {
+        let storage = MockStorageProvider()
         let service = LayeringServiceImplementation(
             stepDataSource: HealthKitStepDataSource.worstCaseMock(),
-            storageProvider: MockStorageProvider()
+            storageProvider: storage
         )
 
-        let results = try await service.performLayering()
+        try await service.performLayering()
+        let results = storage.source
 
         print(results.count)
         #expect(
             results.allSatisfy { interval in
-                interval.syncedToServer == false &&
-                interval.endDate > interval.startDate
+                interval.value.syncedToServer == false &&
+                interval.value.endDate > interval.value.startDate
             }
         )
 
-        let endDates = results.map(\.endDate).dropLast()
-        let startDates = results.map(\.startDate).dropFirst()
+        let endDates = results.map(\.value.endDate).dropLast()
+        let startDates = results.map(\.value.startDate).dropFirst()
         #expect(endDates.count == startDates.count)
 
         for (endDate, startDate) in zip(endDates, startDates) {

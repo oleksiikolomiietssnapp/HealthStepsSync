@@ -5,15 +5,15 @@
 //  Created by Oleksii Kolomiiets on 1/18/26.
 //
 
-import SwiftUI
 import Observation
+import SwiftUI
 
 @MainActor
 @Observable
 final class SyncedStepsViewModel {
     @ObservationIgnored private let networkService: NetworkService
 
-    var steps: [APIStepSample] = []
+    var storedCount: Int = 0
     var isLoading = false
     var errorMessage: String?
 
@@ -26,11 +26,11 @@ final class SyncedStepsViewModel {
         errorMessage = nil
 
         do {
-            let response: GetStepsResponse = try await networkService.get(.getSteps)
-            steps = response.samples
+            let response: GetStepsStoredCountResponse = try await networkService.get(.getSteps)
+            storedCount = response.storedCount
         } catch {
             errorMessage = error.localizedDescription
-            steps = []
+            storedCount = 0
         }
 
         isLoading = false
@@ -55,15 +55,16 @@ struct SyncedStepsView: View {
                     systemImage: "exclamationmark.triangle.fill",
                     description: Text(errorMessage)
                 )
-            } else if viewModel.steps.isEmpty {
+            } else if viewModel.storedCount == 0 {
                 ContentUnavailableView("No Synced Steps", systemImage: "tray.fill")
             } else {
-                List(viewModel.steps, id: \.uuid) { step in
-                    RawStepRow(sample: step)
-                }
+                ContentUnavailableView("TBD. Raw data list goes here.", systemImage: "clock")
+                // List(viewModel.steps, id: \.uuid) { step in
+                //     RawStepRow(sample: step)
+                // }
             }
         }
-        .navigationTitle("\(viewModel.steps.count) records")
+        .navigationTitle("\(viewModel.storedCount) records")
         .navigationTitle("Synced Steps")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

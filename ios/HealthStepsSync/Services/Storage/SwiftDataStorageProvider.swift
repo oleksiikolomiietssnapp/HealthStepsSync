@@ -14,6 +14,7 @@ struct SyncIntervalData: Sendable {
     let stepCount: Int
 }
 
+@MainActor
 class SwiftDataStorageProvider: LocalStorageProvider {
     private let modelContext: ModelContext
     private let idCacheManager = CacheManager<UUID>()
